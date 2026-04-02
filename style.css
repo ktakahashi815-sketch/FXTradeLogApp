@@ -326,23 +326,32 @@ textarea {
 }
 
 .modal-content {
-    background: var(--input-bg);
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    width: 95%;
+    max-width: 500px;
+    max-height: 90vh; /* 画面高さの 90% に制限 */
+    border-radius: 20px;
     border: 1px solid var(--border-color);
-    border-radius: var(--radius);
-    width: 100%;
-    max-width: 550px;
-    max-height: 90vh;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     display: flex;
     flex-direction: column;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    overflow: hidden; /* 中身のスクロールを制御 */
+}
+
+.modal-body {
+    padding: 0 20px 20px;
+    overflow-y: auto; /* ここでスクロールさせる */
+    flex: 1;
 }
 
 .modal-header {
     padding: 20px;
-    border-bottom: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .modal-header h2 {

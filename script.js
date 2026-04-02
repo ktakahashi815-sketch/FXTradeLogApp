@@ -186,11 +186,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function listGoogleFolders() {
-        const response = await fetch('https://www.googleapis.com/drive/v3/files?q=mimeType=\'application/vnd.google-apps.folder\'&fields=files(id,name)', {
-            headers: { 'Authorization': `Bearer ${cloudConfig.accessToken}` }
-        });
-        const data = await response.json();
-        renderFolderList(data.files || []);
+        try {
+            const response = await fetch('https://www.googleapis.com/drive/v3/files?q=mimeType=\'application/vnd.google-apps.folder\'+and+trashed=false&fields=files(id,name)&pageSize=100', {
+                headers: { 'Authorization': `Bearer ${cloudConfig.accessToken}` }
+            });
+            const data = await response.json();
+            
+            // 「マイドライブ (ルート)」をリストの先頭に追加
+            const folders = [{ id: 'root', name: '📁 マイドライブ (ルート)' }, ...(data.files || [])];
+            renderFolderList(folders);
+        } catch (e) {
+            console.error('Google list folders failed', e);
+            alert('フォルダ一覧の取得に失敗しました。');
+        }
     }
 
     async function uploadToGoogleDrive(csvContent, fileName) {

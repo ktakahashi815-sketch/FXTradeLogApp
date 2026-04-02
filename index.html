@@ -156,27 +156,28 @@
                     <h3>プルダウン項目設定</h3>
                     <button type="button" id="closeSettings" class="close-btn">&times;</button>
                 </div>
-                <div class="settings-grid" id="settingsContainer">
-                    <!-- JS で動的に入力欄が生成されます -->
-                </div>
-                <div class="settings-section">
-                    <label>キプロス時間の時差</label>
-                    <div class="radio-group">
-                        <label><input type="radio" name="offsetType" value="-6" id="offsetSummer"> 夏時間 (-6h)</label>
-                        <label><input type="radio" name="offsetType" value="-7" id="offsetWinter"> 冬時間 (-7h)</label>
+                <div class="modal-body">
+                    <div class="settings-grid" id="settingsContainer">
+                        <!-- JS で動的に入力欄が生成されます -->
                     </div>
-                </div>
-                <div class="settings-section cloud-settings">
-                    <label>クラウド保存設定</label>
-                    <div class="cloud-status" id="cloudStatus">未連携</div>
-                    <div class="cloud-actions">
-                        <button type="button" id="googleLoginBtn" class="btn secondary">Google Drive 連携</button>
-                        <button type="button" id="onedriveLoginBtn" class="btn secondary">OneDrive 連携</button>
+                    <div class="settings-section">
+                        <label>キプロス時間の時差</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="offsetType" value="-6" id="offsetSummer"> 夏時間 (-6h)</label>
+                            <label><input type="radio" name="offsetType" value="-7" id="offsetWinter"> 冬時間 (-7h)</label>
+                        </div>
                     </div>
-                    <div id="cloudFolderPicker" class="hidden">
-                        <label>保存先フォルダを選択</label>
-                        <ul id="folderList" class="folder-list"></ul>
-                        <button type="button" id="confirmFolderBtn" class="btn primary btn-sm">このフォルダに決定</button>
+                    <div class="settings-section cloud-settings">
+                        <label>クラウド保存設定</label>
+                        <div class="cloud-status" id="cloudStatus">未連携</div>
+                        <div class="cloud-actions">
+                            <button type="button" id="googleLoginBtn" class="btn secondary">Google Drive 連携</button>
+                        </div>
+                        <div id="cloudFolderPicker" class="hidden">
+                            <label>保存先フォルダを選択</label>
+                            <ul id="folderList" class="folder-list"></ul>
+                            <button type="button" id="confirmFolderBtn" class="btn primary btn-sm">このフォルダに決定</button>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer settings-footer">
