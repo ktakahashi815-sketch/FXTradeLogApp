@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>FX取引記録アプリ</title>
-    <!-- Google Fonts: Inter & Outfit -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
-    <!-- Cloud SDKs -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
     <style>
@@ -30,7 +28,7 @@
         .btn-icon:hover { background-color: rgba(56, 189, 248, 0.1); transform: rotate(45deg); }
         header h1 { font-family: 'Outfit', sans-serif; font-size: 2.2rem; letter-spacing: -1px; background: linear-gradient(to right, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .subtitle { color: var(--text-secondary); font-size: 0.9rem; margin-top: 4px; }
-        .form-section { background: var(--card-bg); backdrop-filter: blur(10px); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+        .form-section { background: var(--card-bg); backdrop-filter: blur(10px); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         .section-title { font-size: 1rem; font-weight: 600; color: var(--accent-color); margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
         .input-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
         .form-group { display: flex; flex-direction: column; }
@@ -38,8 +36,7 @@
         input, select, textarea { background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); padding: 12px; font-size: 1rem; outline: none; width: 100%; }
         input:focus, select:focus, textarea:focus { border-color: var(--accent-color); box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2); }
         input.negative-input { color: var(--danger) !important; font-weight: 700; }
-        .basic-info-grid { grid-template-columns: 1fr 1fr 80px; }
-        @media (max-width: 480px) { .basic-info-grid { grid-template-columns: 1fr 1.2fr 70px; } }
+        .basic-info-grid { grid-template-columns: 1fr 1.2fr 100px; }
         .total-profit-box { background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; font-size: 1.1rem; font-weight: 700; text-align: center; color: var(--success); min-height: 46px; display: flex; align-items: center; justify-content: center; }
         .total-profit-box.negative-input { color: var(--danger); }
         select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; background-size: 16px; padding-right: 40px; }
@@ -49,9 +46,9 @@
         .btn.primary { background-color: var(--success); color: white; }
         .btn.secondary { background-color: var(--input-bg); color: var(--text-secondary); border: 1px solid var(--border-color); }
         .btn.accent { background-color: var(--accent-color); color: white; }
-        .history-section { margin-top: 40px; }
-        .trade-list { display: flex; flex-direction: column; gap: 15px; }
-        .trade-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 15px; position: relative; }
+        .btn.danger-sm { background-color: var(--danger); color: white; padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; }
+        .trade-list { display: flex; flex-direction: column; gap: 15px; margin-top: 15px; }
+        .trade-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 15px; }
         .trade-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .trade-main { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
         .side-buy { color: var(--success); }
@@ -63,19 +60,18 @@
         .modal-content { background: var(--card-bg); backdrop-filter: blur(20px); width: 95%; max-width: 500px; max-height: 90vh; border-radius: 20px; border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; }
         .modal-body { padding: 0 20px 20px; overflow-y: auto; flex: 1; }
         .modal-header { padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
-        .settings-grid { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+        .settings-grid { padding: 20px; display: flex; flex-direction: column; gap: 20px; }
         .setting-item { display: flex; flex-direction: column; gap: 8px; }
         .settings-section { padding: 0 20px 20px; }
         .radio-group { display: flex; gap: 20px; background: rgba(0, 0, 0, 0.2); padding: 12px; border-radius: 8px; }
         .cloud-settings { border-top: 1px solid var(--border-color); padding-top: 20px; margin-top: 10px; }
-        .cloud-status { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 10px; padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; text-align: center; }
-        .cloud-actions { display: flex; gap: 10px; }
+        .cloud-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .cloud-status { font-size: 0.9rem; color: var(--text-secondary); padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; flex: 1; margin-right: 10px; }
         .folder-list { list-style: none; padding: 0; max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; margin: 10px 0; background: rgba(0, 0, 0, 0.2); }
         .folder-item { padding: 12px 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); cursor: pointer; transition: all 0.2s; font-size: 0.9rem; }
         .folder-item:hover { background: rgba(56, 189, 248, 0.1); }
         .folder-item.selected { background: var(--accent-color); color: white; }
         .modal-footer { padding: 20px; border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 12px; }
-        .btn.danger-btn { background-color: var(--danger); color: white; }
         .hidden { display: none !important; }
         @media (min-width: 480px) { .input-grid { grid-template-columns: 1fr 1fr; } .modal-footer { display: grid; grid-template-columns: 1fr 1fr; } }
     </style>
@@ -89,7 +85,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                 </button>
             </div>
-            <p class="subtitle">Quick & Easy Entry <span class="reset-badge">Clean</span></p>
+            <p class="subtitle">Quick & Easy Entry <span class="reset-badge">Stable</span></p>
         </header>
 
         <form id="tradeForm">
@@ -101,19 +97,19 @@
                         <input type="date" id="date" required>
                     </div>
                     <div class="form-group">
-                        <label>合計損益</label>
+                        <label>累計損益</label>
                         <div id="totalProfitDisplay" class="total-profit-box">0</div>
                     </div>
-                    <div class="form-group no-group">
+                    <div class="form-group">
                         <label for="no">No</label>
-                        <input type="number" id="no" required min="1" max="999">
+                        <input type="number" id="no" required min="1">
                     </div>
                     <div class="form-group">
                         <label for="entryTime">ENTRY 時刻</label>
                         <input type="time" id="entryTime" required>
                     </div>
                     <div class="form-group">
-                        <label for="serverTime">サーバー時刻 (任意)</label>
+                        <label for="serverTime">サーバー時刻</label>
                         <input type="time" id="serverTime">
                     </div>
                     <div class="form-group">
@@ -147,61 +143,24 @@
                         <input type="number" id="extPrice" step="any" inputmode="decimal" placeholder="0.000" required>
                     </div>
                     <div class="form-group">
-                        <label for="pips">pips 値 (自動計算)</label>
+                        <label for="pips">pips</label>
                         <input type="number" id="pips" step="any" inputmode="decimal">
                     </div>
                     <div class="form-group">
-                        <label for="profit">損益 (自動計算)</label>
+                        <label for="profit">損益</label>
                         <input type="number" id="profit" step="any" inputmode="decimal">
                     </div>
                 </div>
             </section>
 
             <section class="form-section">
-                <h2 class="section-title">▼ 分析項目</h2>
+                <h2 class="section-title">▼ 分析・備考</h2>
                 <div class="input-grid">
-                    <div class="form-group">
-                        <label for="entryReason">エントリー理由</label>
-                        <select id="entryReason"></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="exitReason">エグジット理由</label>
-                        <select id="exitReason"></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="drbOs">DRB OS</label>
-                        <select id="drbOs"></select>
-                    </div>
+                    <div class="form-group"><label for="entryReason">エントリー理由</label><select id="entryReason"></select></div>
+                    <div class="form-group"><label for="exitReason">エグジット理由</label><select id="exitReason"></select></div>
+                    <div class="form-group"><label for="drbOs">DRB OS</label><select id="drbOs"></select></div>
                 </div>
-            </section>
-
-            <section class="form-section">
-                <h2 class="section-title">▼ RCI</h2>
-                <div class="input-grid">
-                    <div class="form-group">
-                        <label for="shortRci">短期 RCI</label>
-                        <select id="shortRci"></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="midRci">中期 RCI</label>
-                        <select id="midRci"></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="longRci">長期 RCI</label>
-                        <select id="longRci"></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="totalRci">全体 RCI</label>
-                        <select id="totalRci"></select>
-                    </div>
-                </div>
-            </section>
-
-            <section class="form-section">
-                <h2 class="section-title">▼ 備考</h2>
-                <div class="form-group">
-                    <textarea id="remarks" rows="3" placeholder="トレードの振り返りなど..."></textarea>
-                </div>
+                <div class="form-group" style="margin-top:15px;"><textarea id="remarks" rows="2" placeholder="備考..."></textarea></div>
             </section>
 
             <div class="actions">
@@ -215,278 +174,203 @@
         <div id="settingsModal" class="modal-overlay hidden">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3>プルダウン項目設定</h3>
-                    <button type="button" id="closeSettings" class="btn-close">&times;</button>
+                    <h3>設定</h3>
+                    <button type="button" id="closeSettings" style="background:none;border:none;color:white;font-size:24px;">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <div class="settings-grid" id="settingsContainer"></div>
+                    <div id="settingsContainer" class="settings-grid"></div>
                     <div class="settings-section">
-                        <label>キプロス時間の時差</label>
+                        <label>キプロス時差</label>
                         <div class="radio-group">
-                            <label><input type="radio" name="offsetType" value="-6" id="offsetSummer"> 夏時間 (-6h)</label>
-                            <label><input type="radio" name="offsetType" value="-7" id="offsetWinter"> 冬時間 (-7h)</label>
+                            <label><input type="radio" name="offsetType" value="-6" id="offsetSummer"> 夏 (-6h)</label>
+                            <label><input type="radio" name="offsetType" value="-7" id="offsetWinter"> 冬 (-7h)</label>
                         </div>
                     </div>
                     <div class="settings-section cloud-settings">
                         <label>クラウド保存設定</label>
-                        <div class="cloud-status" id="cloudStatus">未連携</div>
+                        <div class="cloud-header">
+                            <div id="cloudStatus" class="cloud-status">未連携</div>
+                            <button type="button" id="unlinkCloudBtn" class="btn danger-sm hidden">解除</button>
+                        </div>
                         <div class="cloud-actions">
                             <button type="button" id="googleLoginBtn" class="btn secondary">Google Drive 連携</button>
                         </div>
                         <div id="cloudFolderPicker" class="hidden">
-                            <label>保存先フォルダを選択 (マイドライブ直下のみ表示)</label>
                             <ul id="folderList" class="folder-list"></ul>
-                            <button type="button" id="confirmFolderBtn" class="btn primary btn-sm">このフォルダに決定</button>
+                            <button type="button" id="confirmFolderBtn" class="btn primary btn-sm">保存先に決定</button>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" id="saveSettingsBtn" class="btn primary">設定を保存</button>
-                    <button type="button" id="resetSettingsBtn" class="btn secondary">初期値に戻す</button>
                     <button type="button" id="clearAllDataBtn" class="btn danger-btn">全データ消去</button>
                 </div>
             </div>
         </div>
 
-        <section class="history-section">
-            <h2 class="section-title">トレード履歴</h2>
-            <div id="tradeList" class="trade-list"></div>
-        </section>
+        <section class="history-section"><h2 class="section-title">トレード履歴</h2><div id="tradeList" class="trade-list"></div></section>
     </div>
 
     <script>
         const GOOGLE_CLIENT_ID = '330341346642-dbq8o9c5jcev15c3cr8h89729nhhnbdo.apps.googleusercontent.com';
-
         document.addEventListener('DOMContentLoaded', () => {
-            const getEl = id => document.getElementById(id);
-            const tradeForm = getEl('tradeForm');
-            const tradeList = getEl('tradeList');
-            const saveBtn = getEl('saveBtn');
-            const totalProfitDisplay = getEl('totalProfitDisplay');
-            const settingsBtn = getEl('settingsBtn');
-            const settingsModal = getEl('settingsModal');
-            const settingsContainer = getEl('settingsContainer');
-            const cloudStatus = getEl('cloudStatus');
-            const googleLoginBtn = getEl('googleLoginBtn');
-            const cloudFolderPicker = getEl('cloudFolderPicker');
-            const folderList = getEl('folderList');
-
+            const get = id => document.getElementById(id);
             const fields = {
-                date: getEl('date'), no: getEl('no'), entryTime: getEl('entryTime'), serverTime: getEl('serverTime'),
-                exitTime: getEl('exitTime'), currency: getEl('currency'), lot: getEl('lot'), side: getEl('side'),
-                entPrice: getEl('entPrice'), extPrice: getEl('extPrice'), pips: getEl('pips'), profit: getEl('profit'),
-                entryReason: getEl('entryReason'), exitReason: getEl('exitReason'), drbOs: getEl('drbOs'),
-                shortRci: getEl('shortRci'), midRci: getEl('midRci'), longRci: getEl('longRci'), totalRci: getEl('totalRci'), remarks: getEl('remarks')
+                date: get('date'), no: get('no'), entryTime: get('entryTime'), serverTime: get('serverTime'),
+                exitTime: get('exitTime'), currency: get('currency'), lot: get('lot'), side: get('side'),
+                entPrice: get('entPrice'), extPrice: get('extPrice'), pips: get('pips'), profit: get('profit'),
+                entryReason: get('entryReason'), exitReason: get('exitReason'), drbOs: get('drbOs'), remarks: get('remarks')
             };
 
-            const analysisKeys = ["entryReason", "exitReason", "drbOs", "shortRci", "midRci", "longRci", "totalRci"];
             const DEFAULT_SETTINGS = {
-                currency: ["EUR/JPY", "USD/JPY", "GBP/JPY", "EUR/USD", "CAD/JPY"], lot: ["1", "2", "3", "4", "5", "10"], side: ["買", "売"],
-                entryReason: ["短期正規ターン", "中期正規ターン", "大山小山", "ぽこぽこ", "お椀ぐつ", "分析項目なし"],
-                exitReason: ["利確", "損切", "時間切れ", "分析項目なし"], drbOs: ["DRB OS 無", "DRB x_OS", "DRB a_OS", "DRB b_OS", "DRB c_OS", "DRB 全部 OS"],
-                shortRci: ["正規ターン", "過熱圏張り付き", "ガタガタ", "分析項目なし"], midRci: ["正規ターン", "過熱圏張り付き", "ガタガタ", "分析項目なし"],
-                longRci: ["正規ターン", "過熱圏張り付き", "ガタガタ", "分析項目なし"], totalRci: ["正規ターン", "過熱圏張り付き", "ガタガタ", "分析項目なし"], cyprusOffset: -6
+                currency: ["EUR/JPY", "USD/JPY", "GBP/JPY", "EUR/USD"], lot: ["1", "5", "10"], side: ["買", "売"],
+                entryReason: ["短期正規", "中期正規", "大山小山", "分析項目なし"], exitReason: ["利確", "損切", "時間切れ"],
+                drbOs: ["OS無", "x_OS", "全部OS"], cyprusOffset: -6
             };
 
             let trades = JSON.parse(localStorage.getItem('fx_trades')) || [];
             let settings = JSON.parse(localStorage.getItem('fx_settings')) || DEFAULT_SETTINGS;
             let cloudConfig = JSON.parse(localStorage.getItem('fx_cloud_config')) || { service: null, folderId: null, folderName: null };
-            let selectedFolder = null;
+            let googleTokenClient = null;
+
+            function updateAutoNo() {
+                if (parseInt(get('editIndex').value) === -1) {
+                    const next = trades.length > 0 ? Math.max(...trades.map(t => parseInt(t.no) || 0)) + 1 : 1;
+                    fields.no.value = next;
+                }
+            }
 
             function renderSelects() {
-                Object.keys(fields).forEach(key => {
-                    const el = fields[key]; if (!el || el.tagName !== 'SELECT') return;
+                const keys = ["currency", "lot", "side", "entryReason", "exitReason", "drbOs"];
+                keys.forEach(k => {
+                    const el = fields[k]; if (!el) return;
                     const prev = el.value; el.innerHTML = '';
-                    if (analysisKeys.includes(key)) { const o = document.createElement('option'); o.value = ""; o.textContent = ""; el.appendChild(o); }
-                    const opts = settings[key] || DEFAULT_SETTINGS[key];
-                    opts.forEach(opt => { const o = document.createElement('option'); o.value = opt; o.textContent = opt; el.appendChild(o); });
+                    const opts = settings[k] || DEFAULT_SETTINGS[k];
+                    opts.forEach(o => { const op = document.createElement('option'); op.value = o; op.textContent = o; el.appendChild(op); });
                     if (prev && opts.includes(prev)) el.value = prev;
                 });
             }
 
             function updateTotalProfit() {
-                const sum = trades.reduce((acc, t) => acc + (parseFloat(t.profit) || 0), 0);
-                if (totalProfitDisplay) {
-                    totalProfitDisplay.textContent = sum.toLocaleString('ja-JP', { minimumFractionDigits: 1, maximumFractionDigits: 4 });
-                    totalProfitDisplay.classList.toggle('negative-input', sum < 0);
-                }
-            }
-
-            function renderSettingsFields() {
-                if (!settingsContainer) return; settingsContainer.innerHTML = '';
-                const labels = { currency: "通貨ペア", lot: "LOT", side: "売買", entryReason: "エントリー理由", exitReason: "エグジット理由", drbOs: "DRB OS", shortRci: "短期 RCI", midRci: "中期 RCI", longRci: "長期 RCI", totalRci: "全体 RCI" };
-                Object.keys(labels).forEach(key => {
-                    const div = document.createElement('div'); div.className = 'setting-item';
-                    div.innerHTML = `<label>${labels[key]}</label><textarea id="set_${key}">${(settings[key] || DEFAULT_SETTINGS[key]).join('\n')}</textarea>`;
-                    settingsContainer.appendChild(div);
-                });
-                getEl('offsetSummer').checked = settings.cyprusOffset === -6;
-                getEl('offsetWinter').checked = settings.cyprusOffset === -7;
-                updateCloudUI();
+                const sum = trades.reduce((a, t) => a + (parseFloat(t.profit) || 0), 0);
+                get('totalProfitDisplay').textContent = sum.toLocaleString('ja-JP', { maximumFractionDigits: 4 });
+                get('totalProfitDisplay').classList.toggle('negative-input', sum < 0);
             }
 
             function updateCloudUI() {
-                if (!cloudStatus) return;
-                cloudStatus.textContent = cloudConfig.service ? `${cloudConfig.service} 連携済み: ${cloudConfig.folderName || '未選択'}` : '未連携';
-                cloudStatus.style.color = cloudConfig.service ? 'var(--accent-color)' : 'inherit';
-            }
-
-            let googleTokenClient = null;
-            function initGoogleAuth() {
-                if (typeof google === 'undefined') return;
-                googleTokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: GOOGLE_CLIENT_ID, scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.metadata.readonly',
-                    callback: (r) => { if (r.access_token) { cloudConfig.accessToken = r.access_token; cloudConfig.service = 'Google Drive'; listGoogleFolders(); } }
-                });
+                const status = get('cloudStatus'); const unlink = get('unlinkCloudBtn');
+                if (cloudConfig.service) {
+                    status.textContent = `${cloudConfig.service}: ${cloudConfig.folderName}`;
+                    status.style.color = 'var(--accent-color)';
+                    unlink.classList.remove('hidden');
+                } else {
+                    status.textContent = '未連携'; status.style.color = 'inherit'; unlink.classList.add('hidden');
+                }
             }
 
             async function listGoogleFolders() {
                 try {
-                    // クエリを修正: マイドライブ直下 ('root' in parents) かつ ゴミ箱以外 かつ フォルダのみ
-                    const query = encodeURIComponent("mimeType = 'application/vnd.google-apps.folder' and 'root' in parents and trashed = false");
-                    const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)`, { 
-                        headers: { 'Authorization': `Bearer ${cloudConfig.accessToken}` } 
+                    const q = encodeURIComponent("mimeType = 'application/vnd.google-apps.folder' and 'root' in parents and trashed = false");
+                    const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}`, { headers: { 'Authorization': `Bearer ${cloudConfig.accessToken}` } });
+                    const d = await r.json(); const folders = [{ id: 'root', name: 'マイドライブ' }, ...(d.files || [])];
+                    const fl = get('folderList'); fl.innerHTML = '';
+                    folders.forEach(f => {
+                        const li = document.createElement('li'); li.className = 'folder-item'; li.textContent = f.name;
+                        li.onclick = () => { document.querySelectorAll('.folder-item').forEach(e => e.classList.remove('selected')); li.classList.add('selected'); cloudConfig.sel = f; };
+                        fl.appendChild(li);
                     });
-                    const d = await r.json(); 
-                    const folders = [{ id: 'root', name: '📁 マイドライブ (ルート直下)' }, ...(d.files || [])];
-                    if (folderList) {
-                        folderList.innerHTML = '';
-                        folders.forEach(f => {
-                            const li = document.createElement('li'); li.className = 'folder-item'; li.textContent = f.name;
-                            li.onclick = () => { document.querySelectorAll('.folder-item').forEach(e => e.classList.remove('selected')); li.classList.add('selected'); selectedFolder = f; };
-                            folderList.appendChild(li);
-                        });
-                        cloudFolderPicker.classList.remove('hidden');
-                    }
-                } catch(e) { console.error(e); alert('フォルダ一覧の取得に失敗しました。'); }
+                    get('cloudFolderPicker').classList.remove('hidden');
+                } catch(e) { console.error(e); }
             }
 
-            getEl('confirmFolderBtn').onclick = () => {
-                if (!selectedFolder) return alert('フォルダを選択してください');
-                cloudConfig.folderId = selectedFolder.id; cloudConfig.folderName = selectedFolder.name;
-                localStorage.setItem('fx_cloud_config', JSON.stringify(cloudConfig)); updateCloudUI(); cloudFolderPicker.classList.add('hidden');
-                alert(`保存先を「${selectedFolder.name}」に決定しました。`);
+            get('confirmFolderBtn').onclick = () => {
+                if (!cloudConfig.sel) return alert('選択してください');
+                cloudConfig.folderId = cloudConfig.sel.id; cloudConfig.folderName = cloudConfig.sel.name;
+                localStorage.setItem('fx_cloud_config', JSON.stringify(cloudConfig));
+                updateCloudUI(); get('cloudFolderPicker').classList.add('hidden'); alert('保存先設定完了');
             };
 
-            googleLoginBtn.onclick = () => { if (!googleTokenClient) initGoogleAuth(); googleTokenClient && googleTokenClient.requestAccessToken(); };
+            get('unlinkCloudBtn').onclick = () => {
+                if(confirm('クラウド連携を解除しますか？')) {
+                    cloudConfig = { service: null, folderId: null, folderName: null };
+                    localStorage.setItem('fx_cloud_config', JSON.stringify(cloudConfig)); updateCloudUI();
+                }
+            };
 
-            function updateServerTime() {
-                const val = fields.entryTime.value; if (!val) return;
-                const [h, m] = val.split(':').map(Number); let sh = h + (settings.cyprusOffset || -6);
-                if (sh < 0) sh += 24; if (sh >= 24) sh -= 24;
-                fields.serverTime.value = String(sh).padStart(2, '0') + ':' + String(m).padStart(2, '0');
-            }
+            get('googleLoginBtn').onclick = () => {
+                if (!googleTokenClient) {
+                    googleTokenClient = google.accounts.oauth2.initTokenClient({
+                        client_id: GOOGLE_CLIENT_ID, scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.metadata.readonly',
+                        callback: (r) => { if (r.access_token) { cloudConfig.accessToken = r.access_token; cloudConfig.service = 'Google Drive'; listGoogleFolders(); } }
+                    });
+                }
+                googleTokenClient.requestAccessToken();
+            };
 
-            function calculateAuto() {
+            function calculate() {
                 const ent = parseFloat(fields.entPrice.value) || 0; const ext = parseFloat(fields.extPrice.value) || 0;
-                const lot = parseFloat(fields.lot.value) || 1; const side = fields.side.value;
-                const pips = side === '買' ? ext - ent : ent - ext; const profit = pips * lot;
-                fields.pips.value = pips.toFixed(4); fields.profit.value = profit.toFixed(4);
-                fields.pips.classList.toggle('negative-input', pips < 0);
-                fields.profit.classList.toggle('negative-input', profit < 0);
+                const lot = parseFloat(fields.lot.value) || 1; const pips = fields.side.value === '買' ? ext - ent : ent - ext;
+                fields.pips.value = pips.toFixed(4); fields.profit.value = (pips * lot).toFixed(4);
+                fields.pips.classList.toggle('negative-input', pips < 0); fields.profit.classList.toggle('negative-input', (pips*lot) < 0);
             }
 
-            [fields.entPrice, fields.extPrice, fields.lot, fields.side].forEach(el => el.addEventListener('input', calculateAuto));
-            fields.entryTime.addEventListener('change', updateServerTime);
+            [fields.entPrice, fields.extPrice, fields.lot, fields.side].forEach(e => e.addEventListener('input', calculate));
 
-            tradeForm.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
-                    e.preventDefault(); const now = new Date().toTimeString().slice(0, 5);
-                    if (e.target.id === 'entPrice') { fields.entryTime.value = now; updateServerTime(); }
-                    else if (e.target.id === 'extPrice') fields.exitTime.value = now;
+            get('tradeForm').onsubmit = (e) => {
+                e.preventDefault(); const lastExt = fields.extPrice.value;
+                const data = {}; Object.keys(fields).forEach(k => data[k] = fields[k].value);
+                trades.push(data); localStorage.setItem('fx_trades', JSON.stringify(trades));
+                get('tradeForm').reset(); fields.entPrice.value = lastExt; fields.extPrice.value = lastExt; init(); alert('保存しました');
+            };
+
+            get('exportBtn').onclick = async () => {
+                if (trades.length === 0) return;
+                const csv = "\ufeff日付,No,ENTRY時刻,サーバー時刻,EXIT時刻,通貨ペア,LOT,売買,ENT値,EXT値,pips,損益,備考\n" + 
+                    trades.map(t => [t.date,t.no,t.entryTime,t.serverTime,t.exitTime,t.currency,t.lot,t.side,t.entPrice,t.extPrice,t.pips,t.profit,(t.remarks||"").replace(/\n/g," ")].map(v=>`"${v}"`).join(",")).join("\n");
+                const fileName = `FXDATA_${new Date().toISOString().slice(0,10)}.csv`;
+                if (cloudConfig.service === 'Google Drive' && cloudConfig.folderId && confirm('Google Drive に保存しますか？')) {
+                    const meta = { name: fileName, parents: [cloudConfig.folderId] };
+                    const form = new FormData();
+                    form.append('metadata', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
+                    form.append('file', new Blob([csv], { type: 'text/csv' }));
+                    const r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', { method:'POST', headers:{'Authorization':`Bearer ${cloudConfig.accessToken}`}, body:form });
+                    if(r.ok) { alert('保存完了'); return; }
                 }
-            });
-
-            getEl('saveSettingsBtn').onclick = () => {
-                const keys = ["currency", "lot", "side", "entryReason", "exitReason", "drbOs", "shortRci", "midRci", "longRci", "totalRci"];
-                keys.forEach(k => { const el = getEl(`set_${k}`); if (el) settings[k] = el.value.split('\n').map(s => s.trim()).filter(s => s !== ''); });
-                settings.cyprusOffset = parseInt(document.querySelector('input[name="offsetType"]:checked').value);
-                localStorage.setItem('fx_settings', JSON.stringify(settings)); renderSelects(); settingsModal.classList.add('hidden');
-                alert('設定を保存しました');
+                const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download = fileName; a.click();
             };
-
-            getEl('resetSettingsBtn').onclick = () => {
-                if (confirm('リセットしますか？')) { settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS)); localStorage.setItem('fx_settings', JSON.stringify(settings)); renderSettingsFields(); renderSelects(); }
-            };
-
-            getEl('clearAllDataBtn').onclick = () => {
-                if (confirm('全消去しますか？')) { trades = []; localStorage.setItem('fx_trades', JSON.stringify(trades)); tradeForm.reset(); init(); }
-            };
-
-            tradeForm.onsubmit = (e) => {
-                e.preventDefault(); const lastExt = fields.extPrice.value; const d = {}; Object.keys(fields).forEach(k => d[k] = fields[k].value);
-                trades.push(d); localStorage.setItem('fx_trades', JSON.stringify(trades)); tradeForm.reset();
-                fields.entPrice.value = lastExt; fields.extPrice.value = lastExt; init(); alert('保存しました');
-            };
-
-            async function uploadToGoogleDrive(csvContent, fileName) {
-                const metadata = { name: fileName, parents: [cloudConfig.folderId === 'root' ? 'root' : cloudConfig.folderId] };
-                const form = new FormData();
-                form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-                form.append('file', new Blob([csvContent], { type: 'text/csv' }));
-                const resp = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                    method: 'POST', headers: { 'Authorization': `Bearer ${cloudConfig.accessToken}` }, body: form
-                });
-                return resp.ok;
-            }
-
-            getEl('exportBtn').onclick = async () => {
-                if (trades.length === 0) return alert('データがありません');
-                const csv = generateCSV();
-                const ymd = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-                const fileName = `FX${ymd}DATA.csv`;
-
-                if (cloudConfig.service === 'Google Drive' && cloudConfig.folderId && confirm(`Google Drive (${cloudConfig.folderName}) に保存しますか？`)) {
-                    try {
-                        const ok = await uploadToGoogleDrive(csv, fileName);
-                        if (ok) { alert('Google Drive に保存しました！'); return; }
-                    } catch (e) { alert('クラウド保存に失敗しました。'); }
-                }
-
-                const b = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                const a = document.createElement("a");
-                a.href = URL.createObjectURL(b); a.download = fileName; a.click();
-            };
-
-            function generateCSV() {
-                const dates = trades.map(t => new Date(`${t.date} ${t.entryTime}`));
-                const range = `${new Date(Math.min(...dates)).toLocaleString()} - ${new Date(Math.max(...dates)).toLocaleString()}`;
-                let csv = "\ufeffFX取引記録\n開始時刻・終了時刻," + range + "\n";
-                csv += "日付,No,ENTRY時刻,サーバー時刻,EXIT時刻,通貨ペア,LOT,売買,ENT値,EXT値,pips,損益,エントリー理由,エグジット理由,DRB OS,短期RCI,中期RCI,長期RCI,全体RCI,備考\n";
-                trades.forEach(t => {
-                    const row = [t.date, t.no, t.entryTime, t.serverTime, t.exitTime, t.currency, t.lot, t.side, t.entPrice, t.extPrice, t.pips, t.profit, t.entryReason, t.exitReason, t.drbOs, t.shortRci, t.midRci, t.longRci, t.totalRci, (t.remarks || "").replace(/\n/g, " ")];
-                    csv += row.map(v => `"${v}"`).join(",") + "\n";
-                });
-                return csv;
-            }
 
             function renderList() {
-                tradeList.innerHTML = '';
-                [...trades].reverse().forEach((t, i) => {
-                    const aidx = trades.length - 1 - i;
-                    const neg = parseFloat(t.profit) < 0;
+                const tl = get('tradeList'); tl.innerHTML = '';
+                [...trades].reverse().forEach(t => {
                     const card = document.createElement('div'); card.className = 'trade-card';
-                    card.innerHTML = `
-                        <div class="trade-header"><span>No.${t.no}</span><span>${t.date} ${t.entryTime}</span></div>
-                        <div class="trade-main"><div>${t.currency}</div><div class="${t.side === '買' ? 'side-buy' : 'side-sell'}">${t.side} / ${t.lot} LOT</div></div>
-                        <div class="trade-stats"><span>pips: <span class="${neg ? 'negative' : ''}">${t.pips}</span></span><span class="${neg ? 'negative' : 'side-buy'}">損益: ${t.profit}</span></div>
-                        <div class="trade-actions"><button onclick="editTrade(${aidx})">編集</button><button onclick="deleteTrade(${aidx})">削除</button></div>
-                    `;
-                    tradeList.appendChild(card);
+                    card.innerHTML = `<div class="trade-header">No.${t.no} (${t.date})</div><div>${t.currency} ${t.side} | 損益: <span class="${parseFloat(t.profit)<0?'negative':''}">${t.profit}</span></div>`;
+                    tl.appendChild(card);
                 });
             }
 
-            window.editTrade = (i) => {
-                const t = trades[i]; Object.keys(fields).forEach(k => fields[k].value = t[k] || '');
-                saveBtn.textContent = '更新する'; calculateAuto(); window.scrollTo({ top: 0, behavior: 'smooth' });
+            get('settingsBtn').onclick = () => {
+                get('settingsContainer').innerHTML = '';
+                Object.keys(DEFAULT_SETTINGS).forEach(k => {
+                    if(k==='cyprusOffset') return;
+                    const div = document.createElement('div'); div.className = 'setting-item';
+                    div.innerHTML = `<label>${k}</label><textarea id="set_${k}">${(settings[k]||DEFAULT_SETTINGS[k]).join('\n')}</textarea>`;
+                    get('settingsContainer').appendChild(div);
+                });
+                get('settingsModal').classList.remove('hidden');
             };
 
-            window.deleteTrade = (i) => { if (confirm('削除しますか？')) { trades.splice(i, 1); localStorage.setItem('fx_trades', JSON.stringify(trades)); init(); } };
+            get('saveSettingsBtn').onclick = () => {
+                Object.keys(DEFAULT_SETTINGS).forEach(k => { if(k==='cyprusOffset') return; const el = get(`set_${k}`); if(el) settings[k] = el.value.split('\n').map(s=>s.trim()).filter(s=>s); });
+                localStorage.setItem('fx_settings', JSON.stringify(settings)); get('settingsModal').classList.add('hidden'); renderSelects();
+            };
 
-            settingsBtn.onclick = () => { renderSettingsFields(); settingsModal.classList.remove('hidden'); };
-            getEl('closeSettings').onclick = () => settingsModal.classList.add('hidden');
+            get('closeSettings').onclick = () => get('settingsModal').classList.add('hidden');
+            get('resetBtn').onclick = () => { get('tradeForm').reset(); init(); };
 
-            function init() { renderSelects(); updateTotalProfit(); renderList(); if (!fields.date.value) fields.date.value = new Date().toISOString().split('T')[0]; }
+            function init() { 
+                renderSelects(); updateAutoNo(); updateTotalProfit(); renderList(); 
+                if(!fields.date.value) fields.date.value = new Date().toISOString().slice(0,10);
+            }
             init();
         });
     </script>
