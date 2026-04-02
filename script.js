@@ -27,7 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const settingsContainer = document.getElementById('settingsContainer');
     const cloudStatus = document.getElementById('cloudStatus');
     const googleLoginBtn = document.getElementById('googleLoginBtn');
-    const onedriveLoginBtn = document.getElementById('onedriveLoginBtn');
     const cloudFolderPicker = document.getElementById('cloudFolderPicker');
     const folderList = document.getElementById('folderList');
     const confirmFolderBtn = document.getElementById('confirmFolderBtn');
@@ -276,8 +275,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!googleTokenClient) initGoogleAuth();
         if (googleTokenClient) googleTokenClient.requestAccessToken();
     };
-
-    onedriveLoginBtn.onclick = handleMSLogin;
 
     // --- Core logic ---
     function updateServerTime() {

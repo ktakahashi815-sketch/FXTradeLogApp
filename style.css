@@ -247,6 +247,24 @@ textarea {
     margin-bottom: 10px;
 }
 
+.trade-header-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    margin-bottom: 5px;
+}
+
+.revision {
+    position: absolute;
+    right: 48px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    opacity: 0.5;
+}
+
 .trade-no {
     color: var(--accent-color);
     font-weight: 700;
