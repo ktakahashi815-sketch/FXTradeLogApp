@@ -4,7 +4,7 @@
 
 // --- Cloud Configuration ---
 // 次の Client ID を、マニュアルに従って取得したものに書き換えてください。
-const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = '330341346642-dbq8o9c5jcev15c3cr8h89729nhhnbdo.apps.googleusercontent.com';
 const MS_CLIENT_ID = 'YOUR_MS_CLIENT_ID';
 
 document.addEventListener('DOMContentLoaded', () => {
