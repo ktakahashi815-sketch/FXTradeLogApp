@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FX取引記録アプリ</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts: Inter & Outfit -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Cloud SDKs -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+    <script src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-main">
+                <h1>FX Trade Log</h1>
+                <button type="button" id="settingsBtn" class="btn-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </button>
+            </div>
+            <p class="subtitle">Quick & Easy Entry</p>
+        </header>
+
+        <form id="tradeForm">
+            <!-- 基本情報 -->
+            <section class="form-section">
+                <h2 class="section-title">▼ 基本情報</h2>
+                <div class="input-grid basic-info-grid">
+                    <div class="form-group">
+                        <label for="date">日付</label>
+                        <input type="date" id="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>合計損益</label>
+                        <div id="totalProfitDisplay" class="total-profit-box">0</div>
+                    </div>
+                    <div class="form-group no-group">
+                        <label for="no">No</label>
+                        <input type="number" id="no" required min="1" max="999">
+                    </div>
+                    <div class="form-group">
+                        <label for="entryTime">ENTRY 時刻</label>
+                        <input type="time" id="entryTime" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="serverTime">サーバー時刻 (任意)</label>
+                        <input type="time" id="serverTime">
+                    </div>
+                    <div class="form-group">
+                        <label for="exitTime">EXIT 時刻</label>
+                        <input type="time" id="exitTime" required>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 取引内容 -->
+            <section class="form-section">
+                <h2 class="section-title">▼ 取引内容</h2>
+                <div class="input-grid">
+                    <div class="form-group">
+                        <label for="currency">通貨ペア</label>
+                        <select id="currency" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="lot">LOT</label>
+                        <select id="lot" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="side">売買</label>
+                        <select id="side" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="entPrice">ENT 値</label>
+                        <input type="number" id="entPrice" step="any" inputmode="decimal" placeholder="0.000" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="extPrice">EXT 値</label>
+                        <input type="number" id="extPrice" step="any" inputmode="decimal" placeholder="0.000" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pips">pips 値 (自動計算)</label>
+                        <input type="number" id="pips" step="any" inputmode="decimal">
+                    </div>
+                    <div class="form-group">
+                        <label for="profit">損益 (自動計算)</label>
+                        <input type="number" id="profit" step="any" inputmode="decimal">
+                    </div>
+                </div>
+            </section>
+
+            <!-- 分析項目 -->
+            <section class="form-section">
+                <h2 class="section-title">▼ 分析項目</h2>
+                <div class="input-grid">
+                    <div class="form-group">
+                        <label for="entryReason">エントリー理由</label>
+                        <select id="entryReason"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="exitReason">エグジット理由</label>
+                        <select id="exitReason"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="drbOs">DRB OS</label>
+                        <select id="drbOs"></select>
+                    </div>
+                </div>
+            </section>
+
+            <!-- RCI -->
+            <section class="form-section">
+                <h2 class="section-title">▼ RCI</h2>
+                <div class="input-grid">
+                    <div class="form-group">
+                        <label for="shortRci">短期 RCI</label>
+                        <select id="shortRci"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="midRci">中期 RCI</label>
+                        <select id="midRci"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="longRci">長期 RCI</label>
+                        <select id="longRci"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="totalRci">全体 RCI</label>
+                        <select id="totalRci"></select>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 備考 -->
+            <section class="form-section">
+                <h2 class="section-title">▼ 備考</h2>
+                <div class="form-group">
+                    <textarea id="remarks" rows="3" placeholder="トレードの振り返りなど..."></textarea>
+                </div>
+            </section>
+
+            <div class="actions">
+                <button type="submit" id="saveBtn" class="btn primary">保存</button>
+                <button type="button" id="resetBtn" class="btn secondary">リセット</button>
+                <button type="button" id="exportBtn" class="btn accent">CSVエクスポート</button>
+            </div>
+            <input type="hidden" id="editIndex" value="-1">
+        </form>
+
+        <!-- 設定セクション (モーダル風) -->
+        <div id="settingsModal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>プルダウン項目設定</h3>
+                    <button type="button" id="closeSettings" class="close-btn">&times;</button>
+                </div>
+                <div class="settings-grid" id="settingsContainer">
+                    <!-- JS で動的に入力欄が生成されます -->
+                </div>
+                <div class="settings-section">
+                    <label>キプロス時間の時差</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="offsetType" value="-6" id="offsetSummer"> 夏時間 (-6h)</label>
+                        <label><input type="radio" name="offsetType" value="-7" id="offsetWinter"> 冬時間 (-7h)</label>
+                    </div>
+                </div>
+                <div class="settings-section cloud-settings">
+                    <label>クラウド保存設定</label>
+                    <div class="cloud-status" id="cloudStatus">未連携</div>
+                    <div class="cloud-actions">
+                        <button type="button" id="googleLoginBtn" class="btn secondary">Google Drive 連携</button>
+                        <button type="button" id="onedriveLoginBtn" class="btn secondary">OneDrive 連携</button>
+                    </div>
+                    <div id="cloudFolderPicker" class="hidden">
+                        <label>保存先フォルダを選択</label>
+                        <ul id="folderList" class="folder-list"></ul>
+                        <button type="button" id="confirmFolderBtn" class="btn primary btn-sm">このフォルダに決定</button>
+                    </div>
+                </div>
+                <div class="modal-footer settings-footer">
+                    <button type="button" id="saveSettingsBtn" class="btn primary">設定を保存</button>
+                    <button type="button" id="resetSettingsBtn" class="btn secondary">初期値に戻す</button>
+                    <button type="button" id="clearAllDataBtn" class="btn danger-btn">全データ消去して NO 1 にリセット</button>
+                </div>
+            </div>
+        </div>
+
+        <section class="history-section">
+            <h2 class="section-title">トレード履歴</h2>
+            <div id="tradeList" class="trade-list">
+                <!-- 履歴がここに表示されます -->
+            </div>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
