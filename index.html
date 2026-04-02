@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>!! FX取引記録アプリ REV 1.4 !!</title>
+    <title>FX取引記録アプリ</title>
     <!-- Google Fonts: Inter & Outfit -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
     <!-- Cloud SDKs -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
-    <script src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js"></script>
     <style>
         :root {
             --bg-color: #0f172a; --card-bg: rgba(30, 41, 59, 0.7); --accent-color: #38bdf8;
@@ -26,11 +25,11 @@
         .container { max-width: 600px; margin: 0 auto; }
         header { text-align: center; margin-bottom: 30px; }
         .header-main { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .reset-badge { font-size: 0.7rem; opacity: 0.4; }
         .btn-icon { background: none; border: none; color: var(--accent-color); cursor: pointer; padding: 8px; border-radius: 50%; transition: background-color 0.2s, transform 0.2s; display: flex; align-items: center; justify-content: center; }
         .btn-icon:hover { background-color: rgba(56, 189, 248, 0.1); transform: rotate(45deg); }
         header h1 { font-family: 'Outfit', sans-serif; font-size: 2.2rem; letter-spacing: -1px; background: linear-gradient(to right, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .subtitle { color: var(--text-secondary); font-size: 0.9rem; margin-top: 4px; }
-        .revision-v4 { background: purple; color: yellow; font-size: 1rem; padding: 4px 10px; border-radius: 8px; font-weight: 800; display: inline-block; vertical-align: middle; margin-left: 10px; }
         .form-section { background: var(--card-bg); backdrop-filter: blur(10px); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
         .section-title { font-size: 1rem; font-weight: 600; color: var(--accent-color); margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
         .input-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
@@ -85,12 +84,12 @@
     <div class="container">
         <header>
             <div class="header-main">
-                <h1>FX Trade <span class="revision-v4">!!!! REV 1.4 FINAL FIX !!!!</span></h1>
+                <h1>FX Trade Log</h1>
                 <button type="button" id="settingsBtn" class="btn-icon">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                 </button>
             </div>
-            <p class="subtitle">Quick & Easy Entry</p>
+            <p class="subtitle">Quick & Easy Entry <span class="reset-badge">Clean</span></p>
         </header>
 
         <form id="tradeForm">
@@ -158,7 +157,6 @@
                 </div>
             </section>
 
-            <!-- 分析項目などは省略せず維持 -->
             <section class="form-section">
                 <h2 class="section-title">▼ 分析項目</h2>
                 <div class="input-grid">
@@ -214,7 +212,6 @@
             <input type="hidden" id="editIndex" value="-1">
         </form>
 
-        <!-- 設定セクション (モーダル風) -->
         <div id="settingsModal" class="modal-overlay hidden">
             <div class="modal-content">
                 <div class="modal-header">
@@ -237,7 +234,7 @@
                             <button type="button" id="googleLoginBtn" class="btn secondary">Google Drive 連携</button>
                         </div>
                         <div id="cloudFolderPicker" class="hidden">
-                            <label>保存先フォルダを選択</label>
+                            <label>保存先フォルダを選択 (マイドライブ直下のみ表示)</label>
                             <ul id="folderList" class="folder-list"></ul>
                             <button type="button" id="confirmFolderBtn" class="btn primary btn-sm">このフォルダに決定</button>
                         </div>
@@ -258,9 +255,7 @@
     </div>
 
     <script>
-        /** Logic inlined for Rev 1.4 */
         const GOOGLE_CLIENT_ID = '330341346642-dbq8o9c5jcev15c3cr8h89729nhhnbdo.apps.googleusercontent.com';
-        const MS_CLIENT_ID = 'YOUR_MS_CLIENT_ID';
 
         document.addEventListener('DOMContentLoaded', () => {
             const getEl = id => document.getElementById(id);
@@ -347,8 +342,13 @@
 
             async function listGoogleFolders() {
                 try {
-                    const r = await fetch('https://www.googleapis.com/drive/v3/files?q=mimeType=\'application/vnd.google-apps.folder\'+and+trashed=false&fields=files(id,name)', { headers: { 'Authorization': `Bearer ${cloudConfig.accessToken}` } });
-                    const d = await r.json(); const folders = [{ id: 'root', name: '📁 マイドライブ' }, ...(d.files || [])];
+                    // クエリを修正: マイドライブ直下 ('root' in parents) かつ ゴミ箱以外 かつ フォルダのみ
+                    const query = encodeURIComponent("mimeType = 'application/vnd.google-apps.folder' and 'root' in parents and trashed = false");
+                    const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)`, { 
+                        headers: { 'Authorization': `Bearer ${cloudConfig.accessToken}` } 
+                    });
+                    const d = await r.json(); 
+                    const folders = [{ id: 'root', name: '📁 マイドライブ (ルート直下)' }, ...(d.files || [])];
                     if (folderList) {
                         folderList.innerHTML = '';
                         folders.forEach(f => {
@@ -358,12 +358,14 @@
                         });
                         cloudFolderPicker.classList.remove('hidden');
                     }
-                } catch(e) { console.error(e); }
+                } catch(e) { console.error(e); alert('フォルダ一覧の取得に失敗しました。'); }
             }
 
             getEl('confirmFolderBtn').onclick = () => {
-                if (!selectedFolder) return; cloudConfig.folderId = selectedFolder.id; cloudConfig.folderName = selectedFolder.name;
+                if (!selectedFolder) return alert('フォルダを選択してください');
+                cloudConfig.folderId = selectedFolder.id; cloudConfig.folderName = selectedFolder.name;
                 localStorage.setItem('fx_cloud_config', JSON.stringify(cloudConfig)); updateCloudUI(); cloudFolderPicker.classList.add('hidden');
+                alert(`保存先を「${selectedFolder.name}」に決定しました。`);
             };
 
             googleLoginBtn.onclick = () => { if (!googleTokenClient) initGoogleAuth(); googleTokenClient && googleTokenClient.requestAccessToken(); };
@@ -396,9 +398,19 @@
             });
 
             getEl('saveSettingsBtn').onclick = () => {
-                Object.keys(DEFAULT_SETTINGS).forEach(k => { if (k === 'cyprusOffset') return; const el = getEl(`set_${k}`); if (el) settings[k] = el.value.split('\n').filter(s => s.trim()); });
+                const keys = ["currency", "lot", "side", "entryReason", "exitReason", "drbOs", "shortRci", "midRci", "longRci", "totalRci"];
+                keys.forEach(k => { const el = getEl(`set_${k}`); if (el) settings[k] = el.value.split('\n').map(s => s.trim()).filter(s => s !== ''); });
                 settings.cyprusOffset = parseInt(document.querySelector('input[name="offsetType"]:checked').value);
                 localStorage.setItem('fx_settings', JSON.stringify(settings)); renderSelects(); settingsModal.classList.add('hidden');
+                alert('設定を保存しました');
+            };
+
+            getEl('resetSettingsBtn').onclick = () => {
+                if (confirm('リセットしますか？')) { settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS)); localStorage.setItem('fx_settings', JSON.stringify(settings)); renderSettingsFields(); renderSelects(); }
+            };
+
+            getEl('clearAllDataBtn').onclick = () => {
+                if (confirm('全消去しますか？')) { trades = []; localStorage.setItem('fx_trades', JSON.stringify(trades)); tradeForm.reset(); init(); }
             };
 
             tradeForm.onsubmit = (e) => {
@@ -407,18 +419,69 @@
                 fields.entPrice.value = lastExt; fields.extPrice.value = lastExt; init(); alert('保存しました');
             };
 
-            getEl('exportBtn').onclick = async () => { /* Export logic same as Rev 1.3 */
-                alert('Rev 1.4: クラウド保存・ダウンロード共に実行可能です');
+            async function uploadToGoogleDrive(csvContent, fileName) {
+                const metadata = { name: fileName, parents: [cloudConfig.folderId === 'root' ? 'root' : cloudConfig.folderId] };
+                const form = new FormData();
+                form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+                form.append('file', new Blob([csvContent], { type: 'text/csv' }));
+                const resp = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                    method: 'POST', headers: { 'Authorization': `Bearer ${cloudConfig.accessToken}` }, body: form
+                });
+                return resp.ok;
+            }
+
+            getEl('exportBtn').onclick = async () => {
+                if (trades.length === 0) return alert('データがありません');
+                const csv = generateCSV();
+                const ymd = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+                const fileName = `FX${ymd}DATA.csv`;
+
+                if (cloudConfig.service === 'Google Drive' && cloudConfig.folderId && confirm(`Google Drive (${cloudConfig.folderName}) に保存しますか？`)) {
+                    try {
+                        const ok = await uploadToGoogleDrive(csv, fileName);
+                        if (ok) { alert('Google Drive に保存しました！'); return; }
+                    } catch (e) { alert('クラウド保存に失敗しました。'); }
+                }
+
+                const b = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(b); a.download = fileName; a.click();
             };
+
+            function generateCSV() {
+                const dates = trades.map(t => new Date(`${t.date} ${t.entryTime}`));
+                const range = `${new Date(Math.min(...dates)).toLocaleString()} - ${new Date(Math.max(...dates)).toLocaleString()}`;
+                let csv = "\ufeffFX取引記録\n開始時刻・終了時刻," + range + "\n";
+                csv += "日付,No,ENTRY時刻,サーバー時刻,EXIT時刻,通貨ペア,LOT,売買,ENT値,EXT値,pips,損益,エントリー理由,エグジット理由,DRB OS,短期RCI,中期RCI,長期RCI,全体RCI,備考\n";
+                trades.forEach(t => {
+                    const row = [t.date, t.no, t.entryTime, t.serverTime, t.exitTime, t.currency, t.lot, t.side, t.entPrice, t.extPrice, t.pips, t.profit, t.entryReason, t.exitReason, t.drbOs, t.shortRci, t.midRci, t.longRci, t.totalRci, (t.remarks || "").replace(/\n/g, " ")];
+                    csv += row.map(v => `"${v}"`).join(",") + "\n";
+                });
+                return csv;
+            }
 
             function renderList() {
                 tradeList.innerHTML = '';
                 [...trades].reverse().forEach((t, i) => {
+                    const aidx = trades.length - 1 - i;
+                    const neg = parseFloat(t.profit) < 0;
                     const card = document.createElement('div'); card.className = 'trade-card';
-                    card.innerHTML = `<div class="trade-header"><span>No.${t.no}</span><span>${t.date}</span></div><div>${t.currency} ${t.side}</div>`;
+                    card.innerHTML = `
+                        <div class="trade-header"><span>No.${t.no}</span><span>${t.date} ${t.entryTime}</span></div>
+                        <div class="trade-main"><div>${t.currency}</div><div class="${t.side === '買' ? 'side-buy' : 'side-sell'}">${t.side} / ${t.lot} LOT</div></div>
+                        <div class="trade-stats"><span>pips: <span class="${neg ? 'negative' : ''}">${t.pips}</span></span><span class="${neg ? 'negative' : 'side-buy'}">損益: ${t.profit}</span></div>
+                        <div class="trade-actions"><button onclick="editTrade(${aidx})">編集</button><button onclick="deleteTrade(${aidx})">削除</button></div>
+                    `;
                     tradeList.appendChild(card);
                 });
             }
+
+            window.editTrade = (i) => {
+                const t = trades[i]; Object.keys(fields).forEach(k => fields[k].value = t[k] || '');
+                saveBtn.textContent = '更新する'; calculateAuto(); window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            window.deleteTrade = (i) => { if (confirm('削除しますか？')) { trades.splice(i, 1); localStorage.setItem('fx_trades', JSON.stringify(trades)); init(); } };
 
             settingsBtn.onclick = () => { renderSettingsFields(); settingsModal.classList.remove('hidden'); };
             getEl('closeSettings').onclick = () => settingsModal.classList.add('hidden');
