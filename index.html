@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FX取引記録アプリ</title>
+    <title>FX取引記録アプリ Rev 1.5</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -15,361 +15,618 @@
             --danger: #ef4444; --warning: #f59e0b; --radius: 12px;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        .hidden { display: none !important; }
+
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-color); background-image: radial-gradient(circle at top right, #1e293b, #0f172a);
-            color: var(--text-primary); line-height: 1.6; padding: 20px 10px; min-height: 100vh;
+            color: var(--text-primary); line-height: 1.6; padding: 5px; min-height: 100vh;
         }
-        .container { max-width: 600px; margin: 0 auto; }
-        header { text-align: center; margin-bottom: 30px; }
-        .header-main { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-        .reset-badge { font-size: 0.7rem; opacity: 0.4; }
-        .btn-icon { background: none; border: none; color: var(--accent-color); cursor: pointer; padding: 8px; border-radius: 50%; transition: background-color 0.2s, transform 0.2s; display: flex; align-items: center; justify-content: center; }
-        .btn-icon:hover { background-color: rgba(56, 189, 248, 0.1); transform: rotate(45deg); }
-        header h1 { font-family: 'Outfit', sans-serif; font-size: 2.2rem; letter-spacing: -1px; background: linear-gradient(to right, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .subtitle { color: var(--text-secondary); font-size: 0.9rem; margin-top: 4px; }
-        .form-section { background: var(--card-bg); backdrop-filter: blur(10px); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-        .section-title { font-size: 1rem; font-weight: 600; color: var(--accent-color); margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
-        .input-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
-        .form-group { display: flex; flex-direction: column; }
-        label { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; }
-        input, select, textarea { background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); padding: 12px; font-size: 1rem; outline: none; width: 100%; }
+        .container { max-width: 800px; margin: 0 auto; padding-top: 5px; }
+        
+        .section-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 2px solid var(--accent-color); padding-bottom: 4px; }
+        .section-title { font-size: 1.05rem; font-weight: 700; color: var(--accent-color); }
+        .btn-icon { background: none; border: none; color: var(--accent-color); cursor: pointer; padding: 4px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        
+        .form-section { background: var(--card-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 10px; margin-bottom: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2); }
+        .section-subtitle { font-size: 0.9rem; font-weight: 600; color: var(--accent-color); margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 3px; }
+        
+        .grid-4col { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+        .grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        
+        .form-group { display: flex; flex-direction: column; min-width: 0; position: relative; }
+        label { font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        input, select, textarea, .custom-display { 
+            background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; 
+            color: var(--text-primary); padding: 6px 4px; font-size: 1.05rem; outline: none; width: 100%; font-family: inherit; 
+            min-height: 38px; display: flex; align-items: center; justify-content: center;
+        }
         input:focus, select:focus, textarea:focus { border-color: var(--accent-color); box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2); }
-        input.negative-input { color: var(--danger) !important; font-weight: 700; }
-        .basic-info-grid { grid-template-columns: 1fr 1.2fr 100px; }
-        .total-profit-box { background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; font-size: 1.1rem; font-weight: 700; text-align: center; color: var(--success); min-height: 46px; display: flex; align-items: center; justify-content: center; }
-        .total-profit-box.negative-input { color: var(--danger); }
-        select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; background-size: 16px; padding-right: 40px; }
-        textarea { resize: none; }
-        .actions { display: flex; flex-direction: column; gap: 12px; margin-top: 30px; }
-        .btn { padding: 15px; border: none; border-radius: var(--radius); font-size: 1rem; font-weight: 600; cursor: pointer; text-align: center; }
+        
+        /* 中央寄せ（基本情報・取引内容セクション用） */
+        .centered-inputs input, 
+        .centered-inputs select { 
+            text-align: center; 
+            text-align-last: center;
+        }
+        
+        .date-input-overlay {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 38px;
+            opacity: 0; cursor: pointer; z-index: 2;
+        }
+
+        .display-box { background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 2px; font-size: 1rem; font-weight: 700; text-align: center; color: var(--success); min-height: 40px; display: flex; align-items: center; justify-content: center; }
+        .display-box.negative { color: var(--danger); }
+        
+        select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 4px center; background-size: 14px; padding-right: 20px; }
+        
+        /* ── レート取得ボタン付き入力欄 ── */
+        .input-with-btn { display: flex; gap: 2px; align-items: stretch; }
+        .input-with-btn input { flex: 1; min-width: 0; border-radius: 6px 0 0 6px; }
+        .fetch-btn {
+            min-width: 34px; width: 34px; padding: 0; border: none; border-radius: 0 6px 6px 0;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+            color: white; cursor: pointer; font-size: 0.7rem; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.2s;
+        }
+        .fetch-btn:active { opacity: 0.7; }
+        .fetch-btn.loading { pointer-events: none; background: var(--text-secondary); }
+        .fetch-btn.loading .btn-text { display: none; }
+        .fetch-btn .spinner { display: none; }
+        .fetch-btn.loading .spinner {
+            display: block; width: 14px; height: 14px;
+            border: 2px solid rgba(255,255,255,0.3); border-top-color: white;
+            border-radius: 50%; animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .btn { padding: 14px 5px; border: none; border-radius: var(--radius); font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+        .btn:active { opacity: 0.7; }
         .btn.primary { background-color: var(--success); color: white; }
-        .btn.secondary { background-color: var(--input-bg); color: var(--text-secondary); border: 1px solid var(--border-color); }
         .btn.accent { background-color: var(--accent-color); color: white; }
-        .btn.danger-sm { background-color: var(--danger); color: white; padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; }
-        .trade-list { display: flex; flex-direction: column; gap: 15px; margin-top: 15px; }
-        .trade-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 15px; }
-        .trade-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .trade-main { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-        .side-buy { color: var(--success); }
-        .side-sell { color: var(--danger); }
-        .trade-stats { display: flex; justify-content: space-between; font-size: 0.9rem; background: rgba(0, 0, 0, 0.2); padding: 8px; border-radius: 6px; }
-        .trade-actions { display: flex; gap: 10px; margin-top: 10px; }
+        
+        .trade-list { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+        .trade-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 10px; }
+        .trade-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 0.82rem; }
+        .trade-date { color: var(--accent-color); font-weight: 600; }
         .negative { color: var(--danger) !important; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 1000; padding: 20px; }
-        .modal-content { background: var(--card-bg); backdrop-filter: blur(20px); width: 95%; max-width: 500px; max-height: 90vh; border-radius: 20px; border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; }
-        .modal-body { padding: 0 20px 20px; overflow-y: auto; flex: 1; }
-        .modal-header { padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
-        .settings-grid { padding: 20px; display: flex; flex-direction: column; gap: 20px; }
-        .setting-item { display: flex; flex-direction: column; gap: 8px; }
-        .settings-section { padding: 0 20px 20px; }
-        .radio-group { display: flex; gap: 20px; background: rgba(0, 0, 0, 0.2); padding: 12px; border-radius: 8px; }
-        .cloud-settings { border-top: 1px solid var(--border-color); padding-top: 20px; margin-top: 10px; }
-        .cloud-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .cloud-status { font-size: 0.9rem; color: var(--text-secondary); padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; flex: 1; margin-right: 10px; }
-        .folder-list { list-style: none; padding: 0; max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; margin: 10px 0; background: rgba(0, 0, 0, 0.2); }
-        .folder-item { padding: 12px 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); cursor: pointer; transition: all 0.2s; font-size: 0.9rem; }
-        .folder-item:hover { background: rgba(56, 189, 248, 0.1); }
-        .folder-item.selected { background: var(--accent-color); color: white; }
-        .modal-footer { padding: 20px; border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 12px; }
-        .hidden { display: none !important; }
-        @media (min-width: 480px) { .input-grid { grid-template-columns: 1fr 1fr; } .modal-footer { display: grid; grid-template-columns: 1fr 1fr; } }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 2000; padding: 10px; }
+        .modal-content { background: var(--card-bg); width: 100%; max-width: 500px; border-radius: 16px; border: 1px solid var(--border-color); overflow: hidden; }
+        .modal-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+
+        /* ── トースト通知 ── */
+        .toast {
+            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+            background: var(--card-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color); border-radius: 10px;
+            padding: 10px 22px; z-index: 3000; font-size: 0.9rem; font-weight: 600;
+            animation: toastAnim 3s ease forwards; white-space: nowrap;
+        }
+        .toast.success { border-color: var(--success); color: var(--success); }
+        .toast.warn    { border-color: var(--warning); color: var(--warning); }
+        .toast.error   { border-color: var(--danger);  color: var(--danger); }
+        @keyframes toastAnim { 0%,70% { opacity:1; transform:translateX(-50%) translateY(0); } 100% { opacity:0; transform:translateX(-50%) translateY(20px); } }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <div class="header-main">
-                <h1>FX Trade Log</h1>
-                <button type="button" id="settingsBtn" class="btn-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                </button>
-            </div>
-            <p class="subtitle">Quick & Easy Entry <span class="reset-badge">Stable</span></p>
-        </header>
-
         <form id="tradeForm">
-            <section class="form-section">
-                <h2 class="section-title">▼ 基本情報</h2>
-                <div class="input-grid basic-info-grid">
+            <!-- ◆ 基本情報 (4列 / 中央寄せ) -->
+            <section class="form-section centered-inputs">
+                <div class="section-header-row">
+                    <h2 class="section-title">◆ FX Trade Log / Quick & Easy</h2>
+                    <button type="button" id="settingsBtn" class="btn-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    </button>
+                </div>
+                <div class="grid-4col">
+                    <!-- 1段目: 日付, No, LOT累計, 累計損益 -->
                     <div class="form-group">
                         <label for="date">日付</label>
-                        <input type="date" id="date" required>
+                        <div id="dateDisplay" class="custom-display">--月--日(-)</div>
+                        <input type="date" id="date" class="date-input-overlay" required>
                     </div>
-                    <div class="form-group">
-                        <label>累計損益</label>
-                        <div id="totalProfitDisplay" class="total-profit-box">0</div>
-                    </div>
-                    <div class="form-group">
-                        <label for="no">No</label>
-                        <input type="number" id="no" required min="1">
-                    </div>
-                    <div class="form-group">
-                        <label for="entryTime">ENTRY 時刻</label>
-                        <input type="time" id="entryTime" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="serverTime">サーバー時刻</label>
-                        <input type="time" id="serverTime">
-                    </div>
-                    <div class="form-group">
-                        <label for="exitTime">EXIT 時刻</label>
-                        <input type="time" id="exitTime" required>
-                    </div>
+                    <div class="form-group"><label for="no">No</label><input type="number" id="no" required min="1"></div>
+                    <div class="form-group"><label>LOT累計</label><div id="totalLotDisplay" class="display-box">0</div></div>
+                    <div class="form-group"><label>累計損益</label><div id="totalProfitDisplay" class="display-box">0</div></div>
+                    <!-- 2段目: ENTRY, サーバー, EXIT -->
+                    <div class="form-group"><label for="entryTime">ENTRY</label><input type="time" id="entryTime" required></div>
+                    <div class="form-group"><label for="serverTime">サーバー</label><input type="time" id="serverTime"></div>
+                    <div class="form-group"><label for="exitTime">EXIT</label><input type="time" id="exitTime" required></div>
                 </div>
             </section>
 
-            <section class="form-section">
-                <h2 class="section-title">▼ 取引内容</h2>
-                <div class="input-grid">
+            <!-- ▼ 取引内容 (4列 / 中央寄せ) -->
+            <section class="form-section centered-inputs">
+                <h2 class="section-subtitle">▼取引内容</h2>
+                <div class="grid-4col">
+                    <div class="form-group"><label for="currency">通貨</label><select id="currency" required></select></div>
+                    <div class="form-group"><label for="lot">LOT</label><select id="lot" required></select></div>
+                    <div class="form-group"><label for="side">売買</label><select id="side" required></select></div>
+                    <div class="form-group"></div><!-- 4列目スペーサー -->
+                    <!-- ENT: 入力欄 + 取得ボタン -->
                     <div class="form-group">
-                        <label for="currency">通貨ペア</label>
-                        <select id="currency" required></select>
+                        <label for="entPrice">ENT</label>
+                        <div class="input-with-btn">
+                            <input type="number" id="entPrice" step="any" inputmode="decimal" required>
+                            <button type="button" id="fetchEntBtn" class="fetch-btn" title="リアルタイムレート取得">
+                                <span class="btn-text">取</span><div class="spinner"></div>
+                            </button>
+                        </div>
                     </div>
+                    <!-- EXT: 入力欄 + 取得ボタン -->
                     <div class="form-group">
-                        <label for="lot">LOT</label>
-                        <select id="lot" required></select>
+                        <label for="extPrice">EXT</label>
+                        <div class="input-with-btn">
+                            <input type="number" id="extPrice" step="any" inputmode="decimal" required>
+                            <button type="button" id="fetchExtBtn" class="fetch-btn" title="リアルタイムレート取得">
+                                <span class="btn-text">取</span><div class="spinner"></div>
+                            </button>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="side">売買</label>
-                        <select id="side" required></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="entPrice">ENT 値</label>
-                        <input type="number" id="entPrice" step="any" inputmode="decimal" placeholder="0.000" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="extPrice">EXT 値</label>
-                        <input type="number" id="extPrice" step="any" inputmode="decimal" placeholder="0.000" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="pips">pips</label>
-                        <input type="number" id="pips" step="any" inputmode="decimal">
-                    </div>
-                    <div class="form-group">
-                        <label for="profit">損益</label>
-                        <input type="number" id="profit" step="any" inputmode="decimal">
-                    </div>
+                    <div class="form-group"><label for="pips">pips</label><input type="number" id="pips" step="any" readonly></div>
+                    <div class="form-group"><label for="profit">損益</label><input type="number" id="profit" step="any" readonly></div>
                 </div>
             </section>
 
+            <!-- ▼ RCI / 分析 (2列 / 左寄せ維持) -->
             <section class="form-section">
-                <h2 class="section-title">▼ 分析・備考</h2>
-                <div class="input-grid">
+                <h2 class="section-subtitle">▼RCI / 分析項目</h2>
+                <div class="grid-2col">
+                    <div class="form-group"><label for="shortRci">短期 RCI</label><select id="shortRci"></select></div>
+                    <div class="form-group"><label for="midRci">中期 RCI</label><select id="midRci"></select></div>
+                    <div class="form-group"><label for="longRci">長期 RCI</label><select id="longRci"></select></div>
+                    <div class="form-group"><label for="totalRci">全体 RCI</label><select id="totalRci"></select></div>
                     <div class="form-group"><label for="entryReason">エントリー理由</label><select id="entryReason"></select></div>
                     <div class="form-group"><label for="exitReason">エグジット理由</label><select id="exitReason"></select></div>
-                    <div class="form-group"><label for="drbOs">DRB OS</label><select id="drbOs"></select></div>
+                    <div class="form-group" style="grid-column: span 2;"><label for="remarks">備考</label><textarea id="remarks" rows="1"></textarea></div>
                 </div>
-                <div class="form-group" style="margin-top:15px;"><textarea id="remarks" rows="2" placeholder="備考..."></textarea></div>
             </section>
 
             <div class="actions">
-                <button type="submit" id="saveBtn" class="btn primary">保存</button>
-                <button type="button" id="resetBtn" class="btn secondary">リセット</button>
-                <button type="button" id="exportBtn" class="btn accent">CSVエクスポート</button>
+                <button type="submit" id="saveBtn" class="btn primary">更新</button>
+                <button type="button" id="exportBtn" class="btn accent">CSV保存</button>
             </div>
             <input type="hidden" id="editIndex" value="-1">
         </form>
 
+        <!-- 設定モーダル -->
         <div id="settingsModal" class="modal-overlay hidden">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h3>設定</h3>
-                    <button type="button" id="closeSettings" style="background:none;border:none;color:white;font-size:24px;">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div id="settingsContainer" class="settings-grid"></div>
-                    <div class="settings-section">
-                        <label>キプロス時差</label>
-                        <div class="radio-group">
-                            <label><input type="radio" name="offsetType" value="-6" id="offsetSummer"> 夏 (-6h)</label>
-                            <label><input type="radio" name="offsetType" value="-7" id="offsetWinter"> 冬 (-7h)</label>
-                        </div>
-                    </div>
-                    <div class="settings-section cloud-settings">
-                        <label>クラウド保存設定</label>
-                        <div class="cloud-header">
-                            <div id="cloudStatus" class="cloud-status">未連携</div>
-                            <button type="button" id="unlinkCloudBtn" class="btn danger-sm hidden">解除</button>
-                        </div>
-                        <div class="cloud-actions">
-                            <button type="button" id="googleLoginBtn" class="btn secondary">Google Drive 連携</button>
-                        </div>
-                        <div id="cloudFolderPicker" class="hidden">
-                            <ul id="folderList" class="folder-list"></ul>
-                            <button type="button" id="confirmFolderBtn" class="btn primary btn-sm">保存先に決定</button>
+                <div class="modal-header"><h3>詳細設定</h3><button type="button" id="closeSettings" style="background:none;border:none;color:white;font-size:28px;">&times;</button></div>
+                <div class="modal-body" style="padding:15px;overflow-y:auto;max-height:70vh;">
+                    <div id="settingsContainer" style="display:flex;flex-direction:column;gap:15px;"></div>
+                    <div style="margin-top:20px;">
+                        <label>キプロス時間設定</label>
+                        <div style="display:flex;gap:20px;background:rgba(0,0,0,0.2);padding:10px;border-radius:8px;">
+                            <label><input type="radio" name="offsetType" value="-6" id="offsetSummer"> 夏 (-6)</label>
+                            <label><input type="radio" name="offsetType" value="-7" id="offsetWinter"> 冬 (-7)</label>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" id="saveSettingsBtn" class="btn primary">設定を保存</button>
-                    <button type="button" id="clearAllDataBtn" class="btn danger-btn">全データ消去</button>
+                <div class="modal-footer" style="padding:15px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                    <button type="button" id="saveSettingsBtn" class="btn primary">保存</button>
+                    <button type="button" id="clearAllDataBtn" class="btn secondary" style="background-color:var(--danger);color:white;">全消去</button>
                 </div>
             </div>
         </div>
 
-        <section class="history-section"><h2 class="section-title">トレード履歴</h2><div id="tradeList" class="trade-list"></div></section>
+        <section class="history-section"><h2 class="section-subtitle">履歴</h2><div id="tradeList" class="trade-list"></div></section>
     </div>
 
     <script>
-        const GOOGLE_CLIENT_ID = '330341346642-dbq8o9c5jcev15c3cr8h89729nhhnbdo.apps.googleusercontent.com';
         document.addEventListener('DOMContentLoaded', () => {
             const get = id => document.getElementById(id);
+
+            // ── 設定（Cloudflare Workers 名をここに設定） ──
+            const WORKER_NAME = "kazuhiro-fxproxy"; // 実際の Workers 名に書き換えてください
+
+            // ── DOM要素の参照 ──
             const fields = {
                 date: get('date'), no: get('no'), entryTime: get('entryTime'), serverTime: get('serverTime'),
                 exitTime: get('exitTime'), currency: get('currency'), lot: get('lot'), side: get('side'),
                 entPrice: get('entPrice'), extPrice: get('extPrice'), pips: get('pips'), profit: get('profit'),
-                entryReason: get('entryReason'), exitReason: get('exitReason'), drbOs: get('drbOs'), remarks: get('remarks')
+                shortRci: get('shortRci'), midRci: get('midRci'), longRci: get('longRci'), totalRci: get('totalRci'),
+                entryReason: get('entryReason'), exitReason: get('exitReason'), remarks: get('remarks')
             };
 
+            // ── Yahoo Finance シンボルマップ（11通貨ペア対応）──
+            const symbolMap = {
+                "EUR/JPY": "EURJPY=X", "USD/JPY": "USDJPY=X", "GBP/JPY": "GBPJPY=X",
+                "EUR/USD": "EURUSD=X", "GBP/USD": "GBPUSD=X", "CAD/JPY": "CADJPY=X",
+                "TRY/JPY": "TRYJPY=X", "AUD/JPY": "AUDJPY=X", "NZD/JPY": "NZDJPY=X",
+                "CHF/JPY": "CHFJPY=X", "XAUUSD":  "XAUUSD=X"
+            };
+
+            // ── デフォルト設定（通貨ペアを11種に拡張）──
             const DEFAULT_SETTINGS = {
-                currency: ["EUR/JPY", "USD/JPY", "GBP/JPY", "EUR/USD"], lot: ["1", "5", "10"], side: ["買", "売"],
-                entryReason: ["短期正規", "中期正規", "大山小山", "分析項目なし"], exitReason: ["利確", "損切", "時間切れ"],
-                drbOs: ["OS無", "x_OS", "全部OS"], cyprusOffset: -6
+                currency: ["EUR/JPY", "USD/JPY", "GBP/JPY", "EUR/USD", "GBP/USD",
+                           "CAD/JPY", "TRY/JPY", "AUD/JPY", "NZD/JPY", "CHF/JPY", "XAUUSD"],
+                lot: ["1", "5", "10"], side: ["買", "売"],
+                shortRci: ["正規ターン", "張り付き", "ガタガタ"], midRci: ["正規ターン", "張り付き", "ガタガタ"],
+                longRci: ["正規ターン", "張り付き", "ガタガタ"], totalRci: ["正規ターン", "張り付き", "ガタガタ"],
+                entryReason: ["短期正規", "中期正規", "分析なし"], exitReason: ["利確", "損切", "時間切れ"],
+                cyprusOffset: -6
             };
 
-            let trades = JSON.parse(localStorage.getItem('fx_trades')) || [];
-            let settings = JSON.parse(localStorage.getItem('fx_settings')) || DEFAULT_SETTINGS;
-            let cloudConfig = JSON.parse(localStorage.getItem('fx_cloud_config')) || { service: null, folderId: null, folderName: null };
-            let googleTokenClient = null;
+            let trades = []; try { trades = JSON.parse(localStorage.getItem('fx_trades')) || []; } catch(e) { trades = []; }
+            let settings = DEFAULT_SETTINGS; try { const saved = localStorage.getItem('fx_settings'); if(saved) settings = {...DEFAULT_SETTINGS, ...JSON.parse(saved)}; } catch(e) {}
 
+            // ────────────────────────────────────
+            // ■ トースト通知
+            // ────────────────────────────────────
+            function showToast(msg, type = 'success') {
+                // 既存のトーストを削除
+                document.querySelectorAll('.toast').forEach(t => t.remove());
+                const el = document.createElement('div');
+                el.className = `toast ${type}`;
+                el.textContent = msg;
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 3200);
+            }
+
+            // ────────────────────────────────────
+            // ■ レート取得（Cloudflare Workers 経由）
+            // ────────────────────────────────────
+            async function fetchRate(pair) {
+                const symbol = symbolMap[pair];
+                if (!symbol) throw new Error('未対応の通貨ペアです');
+
+                const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`;
+                // 指定の Workers URL 形式
+                const proxyUrl = `https://${WORKER_NAME}.workers.dev/?url=${encodeURIComponent(yahooUrl)}`;
+
+                try {
+                    // タイムアウトを10秒に設定
+                    const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(10000) });
+                    if (!res.ok) throw new Error(`通信エラー: ${res.status}`);
+                    
+                    const data = await res.json();
+                    if (!data.chart || !data.chart.result || !data.chart.result[0]) {
+                        throw new Error('データ形式が不正です');
+                    }
+                    
+                    const price = data.chart.result[0].meta.regularMarketPrice;
+                    if (typeof price !== 'number' || isNaN(price)) {
+                        throw new Error('価格が取得できませんでした');
+                    }
+                    return price;
+                } catch(e) {
+                    console.error('Fetch Error:', e);
+                    throw new Error(`取得失敗: ${e.message}`);
+                }
+            }
+
+            // ────────────────────────────────────
+            // ■ pips単位の自動判定
+            // ────────────────────────────────────
+            function getPipsUnit(pair) {
+                if (pair === "XAUUSD") return 0.01;
+                if (pair.includes("JPY")) return 0.01;
+                return 0.0001; // XXX/USD系
+            }
+
+            // ────────────────────────────────────
+            // ■ pips & 損益計算（通貨ペア別）
+            // ────────────────────────────────────
+            function calculate() {
+                try {
+                    const pair = fields.currency.value || "";
+                    const ent = parseFloat(fields.entPrice.value) || 0;
+                    const ext = parseFloat(fields.extPrice.value) || 0;
+                    const lot = parseFloat(fields.lot.value) || 1;
+                    const side = fields.side.value;
+
+                    // pips計算：売買方向を考慮
+                    const pipsUnit = getPipsUnit(pair);
+                    const diff = side === '買' ? ext - ent : ent - ext;
+                    const pips = diff / pipsUnit;
+
+                    // 損益計算：通貨ペアの種類で分岐（1LOT = 1,000通貨）
+                    let profit = 0;
+                    if (pair === "XAUUSD") {
+                        // ゴールド: (差分) × 1000 × LOT数
+                        profit = diff * 1000 * lot;
+                    } else if (pair.includes("JPY")) {
+                        // JPYペア: pips × 10 × LOT数（1pips = 10円）
+                        profit = pips * 10 * lot;
+                    } else {
+                        // USDペア: pips × 0.1 × LOT数（USD建て表示）
+                        profit = pips * 0.1 * lot;
+                    }
+
+                    // 表示用の小数桁数を決定
+                    const pipsDec = pair.includes("JPY") || pair === "XAUUSD" ? 1 : 2;
+                    const profitDec = pair.includes("JPY") ? 0 : 2;
+
+                    fields.pips.value = pips.toFixed(pipsDec);
+                    fields.profit.value = profit.toFixed(profitDec);
+                    fields.pips.classList.toggle('negative', pips < 0);
+                    fields.profit.classList.toggle('negative', profit < 0);
+                } catch(e) {
+                    console.warn('計算エラー:', e);
+                }
+            }
+
+            // ────────────────────────────────────
+            // ■ レート取得ボタン共通処理（排他制御 + キャッシュ検出）
+            // ────────────────────────────────────
+            let isFetching = false; // 取得中フラグ
+
+            async function handleFetchRate(target) {
+                // 取得中なら何もしない（二重押し防止）
+                if (isFetching) return;
+
+                const pair = fields.currency.value;
+                if (!pair || !symbolMap[pair]) {
+                    showToast('この通貨ペアはレート取得に未対応です', 'error');
+                    return;
+                }
+
+                // 両方のボタンをロック
+                isFetching = true;
+                const entBtn = get('fetchEntBtn');
+                const extBtn = get('fetchExtBtn');
+                entBtn.classList.add('loading');
+                extBtn.classList.add('loading');
+
+                try {
+                    const rate = await fetchRate(pair);
+
+                    // レート反映
+                    if (target === 'ent') {
+                        fields.entPrice.value = rate;
+                    } else {
+                        fields.extPrice.value = rate;
+                    }
+
+                    // 時刻の自動セット
+                    const now = new Date().toTimeString().slice(0, 5);
+                    if (target === 'ent') {
+                        fields.entryTime.value = now;
+                        updateServerTime();
+                    } else {
+                        fields.exitTime.value = now;
+                    }
+
+                    // pips・損益の再計算
+                    calculate();
+
+                    // 成功通知
+                    showToast(`${pair} = ${rate} ✓ 取得`, 'success');
+                } catch(e) {
+                    showToast(e.message, 'error');
+                } finally {
+                    // 両方のボタンをロック解除
+                    isFetching = false;
+                    entBtn.classList.remove('loading');
+                    extBtn.classList.remove('loading');
+                }
+            }
+
+            // ────────────────────────────────────
+            // ■ 日付・時刻・No の補助関数
+            // ────────────────────────────────────
+            function formatDispDate(dateStr) {
+                if(!dateStr) return "--月--日(-)";
+                try {
+                    const days = ['日', '月', '火', '水', '木', '金', '土'];
+                    const d = new Date(dateStr);
+                    if(isNaN(d.getTime())) return dateStr;
+                    return `${d.getMonth()+1}月${d.getDate()}日(${days[d.getDay()]})`;
+                } catch(e) { return dateStr; }
+            }
+            function updateDateDisplay() {
+                const el = get('dateDisplay'); if(el) el.textContent = formatDispDate(fields.date.value);
+            }
             function updateAutoNo() {
-                if (parseInt(get('editIndex').value) === -1) {
+                const ei = get('editIndex');
+                if (ei && parseInt(ei.value) === -1 && fields.no) {
                     const next = trades.length > 0 ? Math.max(...trades.map(t => parseInt(t.no) || 0)) + 1 : 1;
                     fields.no.value = next;
                 }
             }
-
+            function updateServerTime() {
+                if (!fields.entryTime || !fields.serverTime) return;
+                const val = fields.entryTime.value; if (!val) return;
+                const [h, m] = val.split(':').map(Number);
+                let sh = h + (settings.cyprusOffset || -6);
+                if (sh < 0) sh += 24; if (sh >= 24) sh -= 24;
+                fields.serverTime.value = String(sh).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+            }
             function renderSelects() {
-                const keys = ["currency", "lot", "side", "entryReason", "exitReason", "drbOs"];
+                const keys = ["currency", "lot", "side", "shortRci", "midRci", "longRci", "totalRci", "entryReason", "exitReason"];
                 keys.forEach(k => {
                     const el = fields[k]; if (!el) return;
                     const prev = el.value; el.innerHTML = '';
-                    const opts = settings[k] || DEFAULT_SETTINGS[k];
+                    if (["shortRci", "midRci", "longRci", "totalRci", "entryReason", "exitReason"].includes(k)) {
+                        el.appendChild(document.createElement('option'));
+                    }
+                    const opts = settings[k] || [];
                     opts.forEach(o => { const op = document.createElement('option'); op.value = o; op.textContent = o; el.appendChild(op); });
                     if (prev && opts.includes(prev)) el.value = prev;
                 });
             }
-
-            function updateTotalProfit() {
-                const sum = trades.reduce((a, t) => a + (parseFloat(t.profit) || 0), 0);
-                get('totalProfitDisplay').textContent = sum.toLocaleString('ja-JP', { maximumFractionDigits: 4 });
-                get('totalProfitDisplay').classList.toggle('negative-input', sum < 0);
+            function updateTotals() {
+                const pSum = trades.reduce((a, t) => a + (parseFloat(t.profit) || 0), 0);
+                const lSum = trades.reduce((a, t) => a + (parseFloat(t.lot) || 0), 0);
+                const pd = get('totalProfitDisplay'); if(pd) { pd.textContent = pSum.toLocaleString(); pd.classList.toggle('negative', pSum < 0); }
+                const ld = get('totalLotDisplay'); if(ld) ld.textContent = lSum.toLocaleString();
             }
 
-            function updateCloudUI() {
-                const status = get('cloudStatus'); const unlink = get('unlinkCloudBtn');
-                if (cloudConfig.service) {
-                    status.textContent = `${cloudConfig.service}: ${cloudConfig.folderName}`;
-                    status.style.color = 'var(--accent-color)';
-                    unlink.classList.remove('hidden');
-                } else {
-                    status.textContent = '未連携'; status.style.color = 'inherit'; unlink.classList.add('hidden');
+            // ────────────────────────────────────
+            // ■ イベントリスナー
+            // ────────────────────────────────────
+
+            // 日付変更時に表示を更新
+            fields.date.addEventListener('change', updateDateDisplay);
+
+            // ENT/EXT テキスト入力時のEnterキー制御（時刻自動セット）
+            [fields.entPrice, fields.extPrice].forEach(el => {
+                if(!el) return;
+                el.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const now = new Date().toTimeString().slice(0, 5);
+                        if (el.id === 'entPrice') {
+                            fields.entryTime.value = now;
+                            updateServerTime();
+                        } else {
+                            fields.exitTime.value = now;
+                        }
+                        calculate();
+                    }
+                });
+            });
+
+            // 入力値の変更で自動計算
+            [fields.entPrice, fields.extPrice, fields.lot, fields.side, fields.currency].forEach(e => {
+                if(e) e.addEventListener('input', calculate);
+                if(e) e.addEventListener('change', calculate);
+            });
+
+            // レート取得ボタン
+            get('fetchEntBtn').addEventListener('click', () => handleFetchRate('ent'));
+            get('fetchExtBtn').addEventListener('click', () => handleFetchRate('ext'));
+
+            // ────────────────────────────────────
+            // ■「更新」ボタン（フォーム送信 + レート取得）
+            // ────────────────────────────────────
+            get('tradeForm').onsubmit = async (e) => {
+                e.preventDefault();
+                const saveBtn = get('saveBtn');
+                const origText = saveBtn.textContent;
+                saveBtn.textContent = '取得中…';
+                saveBtn.disabled = true;
+
+                // レート取得して ENT/EXT に反映（仕様通り常に上書き）
+                const pair = fields.currency.value;
+                if (pair && symbolMap[pair]) {
+                    try {
+                        const rate = await fetchRate(pair);
+                        fields.entPrice.value = rate;
+                        fields.extPrice.value = rate;
+                        // 時刻も現在時刻にセット
+                        const now = new Date().toTimeString().slice(0, 5);
+                        fields.entryTime.value = now;
+                        fields.exitTime.value = now;
+                        updateServerTime();
+                        calculate();
+                        showToast(`${pair} = ${rate} で更新`, 'success');
+                    } catch(err) {
+                        showToast('レート取得失敗。既存値で保存します', 'error');
+                    }
                 }
-            }
 
-            async function listGoogleFolders() {
-                try {
-                    const q = encodeURIComponent("mimeType = 'application/vnd.google-apps.folder' and 'root' in parents and trashed = false");
-                    const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}`, { headers: { 'Authorization': `Bearer ${cloudConfig.accessToken}` } });
-                    const d = await r.json(); const folders = [{ id: 'root', name: 'マイドライブ' }, ...(d.files || [])];
-                    const fl = get('folderList'); fl.innerHTML = '';
-                    folders.forEach(f => {
-                        const li = document.createElement('li'); li.className = 'folder-item'; li.textContent = f.name;
-                        li.onclick = () => { document.querySelectorAll('.folder-item').forEach(e => e.classList.remove('selected')); li.classList.add('selected'); cloudConfig.sel = f; };
-                        fl.appendChild(li);
-                    });
-                    get('cloudFolderPicker').classList.remove('hidden');
-                } catch(e) { console.error(e); }
-            }
-
-            get('confirmFolderBtn').onclick = () => {
-                if (!cloudConfig.sel) return alert('選択してください');
-                cloudConfig.folderId = cloudConfig.sel.id; cloudConfig.folderName = cloudConfig.sel.name;
-                localStorage.setItem('fx_cloud_config', JSON.stringify(cloudConfig));
-                updateCloudUI(); get('cloudFolderPicker').classList.add('hidden'); alert('保存先設定完了');
-            };
-
-            get('unlinkCloudBtn').onclick = () => {
-                if(confirm('クラウド連携を解除しますか？')) {
-                    cloudConfig = { service: null, folderId: null, folderName: null };
-                    localStorage.setItem('fx_cloud_config', JSON.stringify(cloudConfig)); updateCloudUI();
-                }
-            };
-
-            get('googleLoginBtn').onclick = () => {
-                if (!googleTokenClient) {
-                    googleTokenClient = google.accounts.oauth2.initTokenClient({
-                        client_id: GOOGLE_CLIENT_ID, scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.metadata.readonly',
-                        callback: (r) => { if (r.access_token) { cloudConfig.accessToken = r.access_token; cloudConfig.service = 'Google Drive'; listGoogleFolders(); } }
-                    });
-                }
-                googleTokenClient.requestAccessToken();
-            };
-
-            function calculate() {
-                const ent = parseFloat(fields.entPrice.value) || 0; const ext = parseFloat(fields.extPrice.value) || 0;
-                const lot = parseFloat(fields.lot.value) || 1; const pips = fields.side.value === '買' ? ext - ent : ent - ext;
-                fields.pips.value = pips.toFixed(4); fields.profit.value = (pips * lot).toFixed(4);
-                fields.pips.classList.toggle('negative-input', pips < 0); fields.profit.classList.toggle('negative-input', (pips*lot) < 0);
-            }
-
-            [fields.entPrice, fields.extPrice, fields.lot, fields.side].forEach(e => e.addEventListener('input', calculate));
-
-            get('tradeForm').onsubmit = (e) => {
-                e.preventDefault(); const lastExt = fields.extPrice.value;
+                // データ保存
+                const idx = parseInt(get('editIndex').value);
                 const data = {}; Object.keys(fields).forEach(k => data[k] = fields[k].value);
-                trades.push(data); localStorage.setItem('fx_trades', JSON.stringify(trades));
-                get('tradeForm').reset(); fields.entPrice.value = lastExt; fields.extPrice.value = lastExt; init(); alert('保存しました');
-            };
+                if (idx > -1) trades[idx] = data; else trades.push(data);
+                localStorage.setItem('fx_trades', JSON.stringify(trades));
 
-            get('exportBtn').onclick = async () => {
-                if (trades.length === 0) return;
-                const csv = "\ufeff日付,No,ENTRY時刻,サーバー時刻,EXIT時刻,通貨ペア,LOT,売買,ENT値,EXT値,pips,損益,備考\n" + 
-                    trades.map(t => [t.date,t.no,t.entryTime,t.serverTime,t.exitTime,t.currency,t.lot,t.side,t.entPrice,t.extPrice,t.pips,t.profit,(t.remarks||"").replace(/\n/g," ")].map(v=>`"${v}"`).join(",")).join("\n");
-                const fileName = `FXDATA_${new Date().toISOString().slice(0,10)}.csv`;
-                if (cloudConfig.service === 'Google Drive' && cloudConfig.folderId && confirm('Google Drive に保存しますか？')) {
-                    const meta = { name: fileName, parents: [cloudConfig.folderId] };
-                    const form = new FormData();
-                    form.append('metadata', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
-                    form.append('file', new Blob([csv], { type: 'text/csv' }));
-                    const r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', { method:'POST', headers:{'Authorization':`Bearer ${cloudConfig.accessToken}`}, body:form });
-                    if(r.ok) { alert('保存完了'); return; }
-                }
-                const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download = fileName; a.click();
+                // フォームリセット
+                get('tradeForm').reset();
+                get('editIndex').value = "-1";
+                saveBtn.textContent = "更新";
+                saveBtn.disabled = false;
+                init();
             };
-
+            
+            // ────────────────────────────────────
+            // ■ 履歴リスト描画
+            // ────────────────────────────────────
             function renderList() {
-                const tl = get('tradeList'); tl.innerHTML = '';
-                [...trades].reverse().forEach(t => {
+                const tl = get('tradeList'); if (!tl) return; tl.innerHTML = '';
+                [...trades].reverse().forEach((t, i) => {
+                    const aidx = trades.length - 1 - i;
                     const card = document.createElement('div'); card.className = 'trade-card';
-                    card.innerHTML = `<div class="trade-header">No.${t.no} (${t.date})</div><div>${t.currency} ${t.side} | 損益: <span class="${parseFloat(t.profit)<0?'negative':''}">${t.profit}</span></div>`;
+                    const profitVal = parseFloat(t.profit) || 0;
+                    card.innerHTML = `<div class="trade-header">No.${t.no} <span class="trade-date">${formatDispDate(t.date)}</span> <div style="display:flex;gap:5px;"><button onclick="editTrade(${aidx})">編</button><button onclick="deleteTrade(${aidx})">消</button></div></div><div>${t.currency} ${t.side} | 損益: <span class="${profitVal<0?'negative':''}">${t.profit}</span></div>`;
                     tl.appendChild(card);
                 });
             }
 
+            // ── 編集・削除 ──
+            window.editTrade = (i) => {
+                const t = trades[i];
+                Object.keys(fields).forEach(k => fields[k].value = t[k] || '');
+                get('editIndex').value = i;
+                get('saveBtn').textContent = "更新";
+                calculate(); updateDateDisplay();
+                window.scrollTo({top:0, behavior:'smooth'});
+            };
+            window.deleteTrade = (i) => {
+                if (confirm('削除しますか？')) {
+                    trades.splice(i, 1);
+                    localStorage.setItem('fx_trades', JSON.stringify(trades));
+                    init();
+                }
+            };
+
+            // ── 設定モーダル ──
             get('settingsBtn').onclick = () => {
-                get('settingsContainer').innerHTML = '';
-                Object.keys(DEFAULT_SETTINGS).forEach(k => {
-                    if(k==='cyprusOffset') return;
+                const sc = get('settingsContainer'); sc.innerHTML = '';
+                const labels = {
+                    currency:"通貨ペア", lot:"LOT", side:"売買",
+                    shortRci:"短期RCI", midRci:"中期RCI", longRci:"長期RCI", totalRci:"全体RCI",
+                    entryReason:"エントリー理由", exitReason:"エグジット理由"
+                };
+                Object.keys(labels).forEach(k => {
                     const div = document.createElement('div'); div.className = 'setting-item';
-                    div.innerHTML = `<label>${k}</label><textarea id="set_${k}">${(settings[k]||DEFAULT_SETTINGS[k]).join('\n')}</textarea>`;
-                    get('settingsContainer').appendChild(div);
+                    div.innerHTML = `<label>${labels[k]}</label><textarea id="set_${k}">${(settings[k]||[]).join('\n')}</textarea>`;
+                    sc.appendChild(div);
                 });
+                const os = get('offsetSummer'); const ow = get('offsetWinter');
+                if(os) os.checked = (settings.cyprusOffset === -6);
+                if(ow) ow.checked = (settings.cyprusOffset === -7);
                 get('settingsModal').classList.remove('hidden');
             };
-
             get('saveSettingsBtn').onclick = () => {
-                Object.keys(DEFAULT_SETTINGS).forEach(k => { if(k==='cyprusOffset') return; const el = get(`set_${k}`); if(el) settings[k] = el.value.split('\n').map(s=>s.trim()).filter(s=>s); });
-                localStorage.setItem('fx_settings', JSON.stringify(settings)); get('settingsModal').classList.add('hidden'); renderSelects();
+                const keys = ["currency", "lot", "side", "shortRci", "midRci", "longRci", "totalRci", "entryReason", "exitReason"];
+                keys.forEach(k => { const el = get(`set_${k}`); if(el) settings[k] = el.value.split('\n').map(s=>s.trim()).filter(s=>s); });
+                const ck = document.querySelector('input[name="offsetType"]:checked');
+                if(ck) settings.cyprusOffset = parseInt(ck.value);
+                localStorage.setItem('fx_settings', JSON.stringify(settings));
+                get('settingsModal').classList.add('hidden');
+                renderSelects();
+            };
+            get('closeSettings').onclick = () => get('settingsModal').classList.add('hidden');
+            get('clearAllDataBtn').onclick = () => {
+                if(confirm('全データを消去しますか？')) {
+                    trades = [];
+                    localStorage.setItem('fx_trades', JSON.stringify(trades));
+                    init();
+                }
             };
 
-            get('closeSettings').onclick = () => get('settingsModal').classList.add('hidden');
-            get('resetBtn').onclick = () => { get('tradeForm').reset(); init(); };
+            // ── CSV保存 ──
+            get('exportBtn').onclick = () => {
+                if (trades.length === 0) return;
+                const csv = "\ufeff" + Object.keys(fields).join(",") + "\n" + trades.map(t => {
+                    return Object.keys(fields).map(k => {
+                        let v = t[k] || "";
+                        if(k === 'date') v = v.replace(/-/g, '/');
+                        return `"${v.toString().replace(/\n/g," ")}"`;
+                    }).join(",");
+                }).join("\n");
+                const b = new Blob([csv], { type: 'text/csv' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(b);
+                a.download = `FXDATA_${new Date().toISOString().slice(0,10)}.csv`;
+                a.click();
+            };
 
-            function init() { 
-                renderSelects(); updateAutoNo(); updateTotalProfit(); renderList(); 
-                if(!fields.date.value) fields.date.value = new Date().toISOString().slice(0,10);
+            // ────────────────────────────────────
+            // ■ 初期化
+            // ────────────────────────────────────
+            function init() {
+                renderSelects(); updateAutoNo(); updateTotals(); renderList();
+                if(fields.date && !fields.date.value) fields.date.value = new Date().toISOString().slice(0,10);
+                updateDateDisplay();
             }
             init();
         });
