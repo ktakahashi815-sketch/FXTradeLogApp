@@ -110,6 +110,20 @@
         .toast.warn    { border-color: var(--warning); color: var(--warning); }
         .toast.error   { border-color: var(--danger);  color: var(--danger); }
         @keyframes toastAnim { 0%,70% { opacity:1; transform:translateX(-50%) translateY(0); } 100% { opacity:0; transform:translateX(-50%) translateY(20px); } }
+
+        /* ── クラウド連携 UI ── */
+        .cloud-section { margin-top: 25px; padding-top: 15px; border-top: 1px dashed var(--border-color); }
+        .cloud-status { font-size: 0.8rem; margin-bottom: 8px; font-weight: 600; }
+        .folder-list { 
+            list-style: none; background: rgba(0,0,0,0.3); border-radius: 8px; 
+            max-height: 150px; overflow-y: auto; margin-top: 10px; border: 1px solid var(--border-color);
+        }
+        .folder-item { 
+            padding: 8px 12px; font-size: 0.85rem; cursor: pointer; border-bottom: 1px solid var(--border-color);
+            transition: background 0.2s;
+        }
+        .folder-item:hover { background: rgba(255,255,255,0.05); }
+        .folder-item.selected { background: var(--accent-color); color: white; }
     </style>
 </head>
 <body>
@@ -207,6 +221,19 @@
                             <label><input type="radio" name="offsetType" value="-7" id="offsetWinter"> 冬 (-7)</label>
                         </div>
                     </div>
+
+                    <!-- クラウド連携セクション -->
+                    <div class="cloud-section">
+                        <label>クラウド連携 (CSV 自動保存)</label>
+                        <div id="cloudStatus" class="cloud-status">未連携</div>
+                        <button type="button" id="googleLoginBtn" class="btn accent" style="padding:8px;font-size:0.85rem;width:auto;">Google Drive 連携</button>
+                        
+                        <div id="cloudFolderPicker" class="hidden" style="margin-top:15px;">
+                            <label>保存先フォルダを選択してください</label>
+                            <ul id="folderList" class="folder-list"></ul>
+                            <button type="button" id="confirmFolderBtn" class="btn primary" style="margin-top:10px;padding:8px;font-size:0.85rem;">このフォルダに保存</button>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer" style="padding:15px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                     <button type="button" id="saveSettingsBtn" class="btn primary">保存</button>
@@ -222,8 +249,9 @@
         document.addEventListener('DOMContentLoaded', () => {
             const get = id => document.getElementById(id);
 
-            // ── 設定（Cloudflare Workers 名をここに設定） ──
-            const WORKER_NAME = "kazuhiro-fxproxy"; // 実際の Workers 名に書き換えてください
+            // ── 設定 ──
+            const WORKER_NAME = "kazuhiro-fxproxy.k-takahashi815"; 
+            const GOOGLE_CLIENT_ID = '330341346642-dbq8o9c5jcev15c3cr8h89729nhhnbdo.apps.googleusercontent.com';
 
             // ── DOM要素の参照 ──
             const fields = {
@@ -232,6 +260,14 @@
                 entPrice: get('entPrice'), extPrice: get('extPrice'), pips: get('pips'), profit: get('profit'),
                 shortRci: get('shortRci'), midRci: get('midRci'), longRci: get('longRci'), totalRci: get('totalRci'),
                 entryReason: get('entryReason'), exitReason: get('exitReason'), remarks: get('remarks')
+            };
+
+            const cloudUI = {
+                status: get('cloudStatus'),
+                loginBtn: get('googleLoginBtn'),
+                picker: get('cloudFolderPicker'),
+                list: get('folderList'),
+                confirmBtn: get('confirmFolderBtn')
             };
 
             // ── Yahoo Finance シンボルマップ（11通貨ペア対応）──
@@ -255,6 +291,11 @@
 
             let trades = []; try { trades = JSON.parse(localStorage.getItem('fx_trades')) || []; } catch(e) { trades = []; }
             let settings = DEFAULT_SETTINGS; try { const saved = localStorage.getItem('fx_settings'); if(saved) settings = {...DEFAULT_SETTINGS, ...JSON.parse(saved)}; } catch(e) {}
+            
+            // クラウド設定
+            let cloudConfig = { service: null, folderId: null, folderName: null };
+            try { const savedCloud = localStorage.getItem('fx_cloud_config'); if(savedCloud) cloudConfig = JSON.parse(savedCloud); } catch(e) {}
+            let selectedFolder = null;
 
             // ────────────────────────────────────
             // ■ トースト通知
@@ -405,6 +446,78 @@
                     isFetching = false;
                     entBtn.classList.remove('loading');
                     extBtn.classList.remove('loading');
+                }
+            }
+
+            // ────────────────────────────────────
+            // ■ Google Drive 連携ロジック
+            // ────────────────────────────────────
+            let googleTokenClient = null;
+
+            function initGoogleAuth() {
+                try {
+                    if (typeof google !== 'undefined' && google.accounts) {
+                        googleTokenClient = google.accounts.oauth2.initTokenClient({
+                            client_id: GOOGLE_CLIENT_ID,
+                            scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.metadata.readonly',
+                            callback: (response) => {
+                                if (response.access_token) {
+                                    cloudConfig.service = 'Google Drive';
+                                    cloudConfig.accessToken = response.access_token;
+                                    listGoogleFolders();
+                                }
+                            },
+                        });
+                    }
+                } catch (e) { console.error('Google Auth init failed', e); }
+            }
+
+            async function listGoogleFolders() {
+                try {
+                    const resp = await fetch('https://www.googleapis.com/drive/v3/files?q=mimeType=\'application/vnd.google-apps.folder\'+and+trashed=false&fields=files(id,name)&pageSize=100', {
+                        headers: { 'Authorization': `Bearer ${cloudConfig.accessToken}` }
+                    });
+                    const data = await resp.json();
+                    const folders = [{ id: 'root', name: '📁 マイドライブ (ルート)' }, ...(data.files || [])];
+                    renderFolderList(folders);
+                } catch (e) { console.error(e); showToast('フォルダ取得失敗', 'error'); }
+            }
+
+            function renderFolderList(folders) {
+                if (!cloudUI.list) return;
+                cloudUI.list.innerHTML = '';
+                folders.forEach(f => {
+                    const li = document.createElement('li'); li.className = 'folder-item'; li.textContent = f.name;
+                    li.onclick = () => {
+                        document.querySelectorAll('.folder-item').forEach(el => el.classList.remove('selected'));
+                        li.classList.add('selected'); selectedFolder = f;
+                    };
+                    cloudUI.list.appendChild(li);
+                });
+                cloudUI.picker.classList.remove('hidden');
+            }
+
+            async function uploadToGoogleDrive(csvContent, fileName) {
+                try {
+                    const metadata = { name: fileName, parents: [cloudConfig.folderId] };
+                    const form = new FormData();
+                    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+                    form.append('file', new Blob([csvContent], { type: 'text/csv' }));
+                    const resp = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                        method: 'POST', headers: { 'Authorization': `Bearer ${cloudConfig.accessToken}` }, body: form
+                    });
+                    return resp.ok;
+                } catch (e) { console.error(e); return false; }
+            }
+
+            function updateCloudUI() {
+                if (!cloudUI.status) return;
+                if (cloudConfig.service && cloudConfig.folderId) {
+                    cloudUI.status.textContent = `Google Drive 連携済み: ${cloudConfig.folderName}`;
+                    cloudUI.status.style.color = 'var(--success)';
+                } else {
+                    cloudUI.status.textContent = '未連携';
+                    cloudUI.status.style.color = 'var(--text-secondary)';
                 }
             }
 
@@ -591,20 +704,40 @@
                 const ck = document.querySelector('input[name="offsetType"]:checked');
                 if(ck) settings.cyprusOffset = parseInt(ck.value);
                 localStorage.setItem('fx_settings', JSON.stringify(settings));
+                localStorage.setItem('fx_cloud_config', JSON.stringify(cloudConfig)); // クラウド設定も保存
                 get('settingsModal').classList.add('hidden');
                 renderSelects();
+                updateCloudUI();
             };
             get('closeSettings').onclick = () => get('settingsModal').classList.add('hidden');
             get('clearAllDataBtn').onclick = () => {
                 if(confirm('全データを消去しますか？')) {
                     trades = [];
                     localStorage.setItem('fx_trades', JSON.stringify(trades));
+                    cloudConfig = { service: null, folderId: null, folderName: null };
+                    localStorage.removeItem('fx_cloud_config');
                     init();
                 }
             };
 
+            // クラウド連携ボタン
+            cloudUI.loginBtn.onclick = () => {
+                if (!googleTokenClient) initGoogleAuth();
+                if (googleTokenClient) googleTokenClient.requestAccessToken();
+                else showToast('Google SDK 初期化失敗', 'error');
+            };
+            cloudUI.confirmBtn.onclick = () => {
+                if (!selectedFolder) { showToast('フォルダを選択してください', 'error'); return; }
+                cloudConfig.folderId = selectedFolder.id;
+                cloudConfig.folderName = selectedFolder.name;
+                localStorage.setItem('fx_cloud_config', JSON.stringify(cloudConfig));
+                updateCloudUI();
+                cloudUI.picker.classList.add('hidden');
+                showToast(`保存先を「${selectedFolder.name}」に設定`, 'success');
+            };
+
             // ── CSV保存 ──
-            get('exportBtn').onclick = () => {
+            get('exportBtn').onclick = async () => {
                 if (trades.length === 0) return;
                 const csv = "\ufeff" + Object.keys(fields).join(",") + "\n" + trades.map(t => {
                     return Object.keys(fields).map(k => {
@@ -613,10 +746,27 @@
                         return `"${v.toString().replace(/\n/g," ")}"`;
                     }).join(",");
                 }).join("\n");
+                
+                const ymd = new Date().toISOString().slice(0,10).replace(/-/g,'');
+                const fileName = `FX${ymd}DATA.csv`;
+
+                // クラウド保存試行
+                if (cloudConfig.service && cloudConfig.folderId && cloudConfig.accessToken) {
+                    if (confirm(`Google Drive の「${cloudConfig.folderName}」にアップロードしますか？`)) {
+                        const ok = await uploadToGoogleDrive(csv, fileName);
+                        if (ok) {
+                            showToast('Google Drive に保存しました', 'success');
+                            return;
+                        } else {
+                            showToast('クラウド保存失敗。ダウンロードします', 'error');
+                        }
+                    }
+                }
+
                 const b = new Blob([csv], { type: 'text/csv' });
                 const a = document.createElement('a');
                 a.href = URL.createObjectURL(b);
-                a.download = `FXDATA_${new Date().toISOString().slice(0,10)}.csv`;
+                a.download = fileName;
                 a.click();
             };
 
@@ -627,6 +777,8 @@
                 renderSelects(); updateAutoNo(); updateTotals(); renderList();
                 if(fields.date && !fields.date.value) fields.date.value = new Date().toISOString().slice(0,10);
                 updateDateDisplay();
+                updateCloudUI();
+                initGoogleAuth();
             }
             init();
         });
