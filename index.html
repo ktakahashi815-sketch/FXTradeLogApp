@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FX取引記録アプリ Rev 1.5</title>
+    <title>FX取引記録アプリ Rev 1.6</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -226,7 +226,10 @@
                     <div class="cloud-section">
                         <label>クラウド連携 (CSV 自動保存)</label>
                         <div id="cloudStatus" class="cloud-status">未連携</div>
-                        <button type="button" id="googleLoginBtn" class="btn accent" style="padding:8px;font-size:0.85rem;width:auto;">Google Drive 連携</button>
+                        <div style="display:flex;gap:5px;">
+                            <button type="button" id="googleLoginBtn" class="btn accent" style="padding:8px;font-size:0.85rem;width:auto;">Google Drive 連携</button>
+                            <button type="button" id="googleLogoutBtn" class="btn secondary" style="padding:8px;font-size:0.85rem;width:auto;background:#64748b;color:white;">連携解除</button>
+                        </div>
                         
                         <div id="cloudFolderPicker" class="hidden" style="margin-top:15px;">
                             <label>保存先フォルダを選択してください</label>
@@ -265,6 +268,7 @@
             const cloudUI = {
                 status: get('cloudStatus'),
                 loginBtn: get('googleLoginBtn'),
+                logoutBtn: get('googleLogoutBtn'),
                 picker: get('cloudFolderPicker'),
                 list: get('folderList'),
                 confirmBtn: get('confirmFolderBtn')
@@ -375,6 +379,17 @@
                 if (pair === "XAUUSD") return 0.01;
                 if (pair.includes("JPY")) return 0.01;
                 return 0.0001; // XXX/USD系
+            }
+
+            // 通貨ペアに応じた価格入力のステップ調整
+            function updatePriceStep() {
+                const pair = fields.currency.value;
+                let step = "0.00001"; // デフォルト（USD系・5桁）
+                if (pair.includes("JPY") || pair === "XAUUSD") {
+                    step = "0.001"; // JPY系・3桁
+                }
+                fields.entPrice.step = step;
+                fields.extPrice.step = step;
             }
 
             // ────────────────────────────────────
@@ -627,6 +642,8 @@
                 if(e) e.addEventListener('input', calculate);
                 if(e) e.addEventListener('change', calculate);
             });
+            // 通貨変更時にステップ値を更新
+            fields.currency.addEventListener('change', updatePriceStep);
 
             // レート取得ボタン
             get('fetchEntBtn').addEventListener('click', () => handleFetchRate('ent'));
@@ -752,6 +769,15 @@
                 if (googleTokenClient) googleTokenClient.requestAccessToken();
                 else showToast('Google SDK 初期化失敗', 'error');
             };
+            cloudUI.logoutBtn.onclick = () => {
+                if (confirm('連携を解除しますか？')) {
+                    cloudConfig = { service: null, folderId: null, folderName: null };
+                    localStorage.removeItem('fx_cloud_config');
+                    updateCloudUI();
+                    cloudUI.picker.classList.add('hidden');
+                    showToast('連携を解除しました', 'success');
+                }
+            };
             cloudUI.confirmBtn.onclick = () => {
                 if (!selectedFolder) { showToast('フォルダを選択してください', 'error'); return; }
                 cloudConfig.folderId = selectedFolder.id;
@@ -799,12 +825,13 @@
             // ────────────────────────────────────
             // ■ 初期化
             // ────────────────────────────────────
-            function init() {
+                function init() {
                 renderSelects(); updateAutoNo(); updateTotals(); renderList();
                 if(fields.date && !fields.date.value) fields.date.value = new Date().toISOString().slice(0,10);
                 updateDateDisplay();
                 updateCloudUI();
                 initGoogleAuth();
+                updatePriceStep();
             }
             init();
         });
