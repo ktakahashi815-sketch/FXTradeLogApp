@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FX取引記録アプリ Rev 1.7</title>
+    <title>FX取引記録アプリ Rev 1.8</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -147,10 +147,11 @@
                     <div class="form-group"><label for="no">No</label><input type="number" id="no" required min="1"></div>
                     <div class="form-group"><label>LOT累計</label><div id="totalLotDisplay" class="display-box">0</div></div>
                     <div class="form-group"><label>累計損益</label><div id="totalProfitDisplay" class="display-box">0</div></div>
-                    <!-- 2段目: ENTRY, サーバー, EXIT -->
+                    <!-- 2段目: ENTRY, サーバー, EXIT, オフセット値 -->
                     <div class="form-group"><label for="entryTime">ENTRY</label><input type="time" id="entryTime" required></div>
                     <div class="form-group"><label for="serverTime">サーバー</label><input type="time" id="serverTime"></div>
                     <div class="form-group"><label for="exitTime">EXIT</label><input type="time" id="exitTime" required></div>
+                    <div class="form-group"><label for="profitOffset">オフセット値</label><input type="number" id="profitOffset" value="0" step="any"></div>
                 </div>
             </section>
 
@@ -262,7 +263,8 @@
                 exitTime: get('exitTime'), currency: get('currency'), lot: get('lot'), side: get('side'),
                 entPrice: get('entPrice'), extPrice: get('extPrice'), pips: get('pips'), profit: get('profit'),
                 shortRci: get('shortRci'), midRci: get('midRci'), longRci: get('longRci'), totalRci: get('totalRci'),
-                entryReason: get('entryReason'), exitReason: get('exitReason'), remarks: get('remarks')
+                entryReason: get('entryReason'), exitReason: get('exitReason'), remarks: get('remarks'),
+                profitOffset: get('profitOffset')
             };
 
             const cloudUI = {
@@ -610,8 +612,16 @@
             function updateTotals() {
                 const pSum = trades.reduce((a, t) => a + (parseFloat(t.profit) || 0), 0);
                 const lSum = trades.reduce((a, t) => a + (parseFloat(t.lot) || 0), 0);
-                const pd = get('totalProfitDisplay'); if(pd) { pd.textContent = pSum.toLocaleString(); pd.classList.toggle('negative', pSum < 0); }
-                const ld = get('totalLotDisplay'); if(ld) ld.textContent = lSum.toLocaleString();
+                const offset = parseFloat(fields.profitOffset.value) || 0;
+                const totalWithOffset = pSum + offset;
+                
+                const pd = get('totalProfitDisplay'); 
+                if(pd) { 
+                    pd.textContent = totalWithOffset.toLocaleString(); 
+                    pd.classList.toggle('negative', totalWithOffset < 0); 
+                }
+                const ld = get('totalLotDisplay'); 
+                if(ld) ld.textContent = lSum.toLocaleString();
             }
 
             // ────────────────────────────────────
@@ -650,6 +660,9 @@
             // レート取得ボタン
             get('fetchEntBtn').addEventListener('click', () => handleFetchRate('ent'));
             get('fetchExtBtn').addEventListener('click', () => handleFetchRate('ext'));
+
+            // オフセット値変更時に表示を更新
+            fields.profitOffset.addEventListener('input', updateTotals);
 
             // ────────────────────────────────────
             // ■「更新」ボタン（フォーム送信 + レート取得）
