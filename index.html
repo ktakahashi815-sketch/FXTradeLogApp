@@ -134,6 +134,12 @@
 </head>
 <body>
     <div class="container">
+        <!-- Drive再接続アラート -->
+        <div id="driveReconnectAlert" class="hidden" style="background:var(--warning); color:#fff; padding:8px 12px; border-radius:6px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; font-size:0.9rem;">
+            <span>分析項目をDriveから取得するには再接続が必要です</span>
+            <button type="button" id="topReconnectBtn" style="background:#fff; color:var(--warning); border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">再接続</button>
+        </div>
+
         <form id="tradeForm">
             <!-- ◆ 基本情報 (4列 / 中央寄せ) -->
             <section class="form-section centered-inputs">
@@ -318,8 +324,26 @@
             };
 
             // ── 分析項目の状態管理 ──
-            let analysisItemsData = { categories: Array(12).fill({ name: "", items: [] }) };
+            let analysisItemsData = null;
             let analysisItemsFileId = null;
+
+            // ── 初期分析項目データ (file:// 制約対策) ──
+            const DEFAULT_ANALYSIS_ITEMS = {
+              "categories": [
+                { "name": "短期 RCI", "items": ["逆張り系（高値圏）", "逆張り系（低値圏）", "トレンド系（上昇中）", "トレンド系（下降中）", "反転（反転上昇）", "反転（反転下降）", "中央"] },
+                { "name": "中期 RCI", "items": ["逆張り系（高値圏）", "逆張り系（低値圏）", "トレンド系（上昇中）", "トレンド系（下降中）", "反転（反転上昇）", "反転（反転下降）", "中央"] },
+                { "name": "長期 RCI", "items": ["逆張り系（高値圏）", "逆張り系（低値圏）", "トレンド系（上昇中）", "トレンド系（下降中）", "反転（反転上昇）", "反転（反転下降）", "中央"] },
+                { "name": "全体 RCI", "items": ["逆張り系（高値圏）", "逆張り系（低値圏）", "トレンド系（上昇中）", "トレンド系（下降中）", "反転（反転上昇）", "反転（反転下降）", "中央"] },
+                { "name": "エントリー理由", "items": ["押し目買い", "戻り売り", "高値ブレイク", "安値ブレイク", "レンジ", "逆張り", "トレンドフォロー", "押し目候補", "戻り候補", "レジスタンス反発", "サポート反発", "ダブルトップ", "ダブルボトム", "トリプルトップ", "トリプルボトム", "ラインブレイク", "フィボナッチ", "ボリンジャーバンド", "移動平均反発", "移動平均ブレイク"] },
+                { "name": "エグジット理由", "items": ["押し目買い", "戻り売り", "高値更新", "安値更新", "ネック割れ", "9IT", "押し目候補", "戻り候補", "レジスタンス反発", "サポート反発", "ダブルトップ", "ダブルボトム", "トリプルトップ", "トリプルボトム", "ラインブレイク", "フィボナッチ", "ボリンジャーバンド", "移動平均反発", "移動平均ブレイク", "利確", "損切り"] },
+                { "name": "DRB OS", "items": ["DRB OS 無", "DRB x_OS", "DRB a_OS", "DRB b_OS", "DRB c_OS", "DRB 全部 OS"] },
+                { "name": "ボリンジャーバンド", "items": ["+2σ以上", "+2から+1σ間", "+1からセンターライン間", "-1からセンターライン間", "-2から-σ間", "-2σ以下"] },
+                { "name": "EMA位置関係", "items": ["パーフェクトオーダー(上昇)", "パーフェクトオーダー(下降)", "全体的に横ば"] },
+                { "name": "5EMA", "items": ["急上昇", "上昇から反転", "EMA上、EMA上昇中", "EMA上、EMA下降中", "EMA下、EMA上昇中", "EMA下、EMA下降中", "下降から反転", "急下降"] },
+                { "name": "10EMA", "items": ["急上昇", "上昇から反転", "EMA上、EMA上昇中", "EMA上、EMA下降中", "EMA下、EMA上昇中", "EMA下、EMA下降中", "下降から反転", "急下降"] },
+                { "name": "20EMA", "items": ["急上昇", "上昇から反転", "EMA上、EMA上昇中", "EMA上、EMA下降中", "EMA下、EMA上昇中", "EMA下、EMA下降中", "下降から反転", "急下降"] }
+              ]
+            };
 
             // ── デフォルト設定 ──
             const DEFAULT_SETTINGS = {
@@ -603,12 +627,25 @@
 
             function updateCloudUI() {
                 if (!cloudUI.status) return;
+                
+                const alertEl = get('driveReconnectAlert');
+                
                 if (cloudConfig.service && cloudConfig.folderId) {
-                    cloudUI.status.textContent = `Google Drive 連携済み: ${cloudConfig.folderName}`;
-                    cloudUI.status.style.color = 'var(--success)';
+                    if (cloudConfig.accessToken) {
+                        cloudUI.status.textContent = `Google Drive 連携済み: ${cloudConfig.folderName}`;
+                        cloudUI.status.style.color = 'var(--success)';
+                        cloudUI.loginBtn.textContent = 'Drive 連携';
+                        if(alertEl) alertEl.classList.add('hidden');
+                    } else {
+                        cloudUI.status.textContent = `Google Drive 再接続待ち: ${cloudConfig.folderName}`;
+                        cloudUI.status.style.color = 'var(--warning)';
+                        cloudUI.loginBtn.textContent = 'Drive 再接続';
+                        if(alertEl) alertEl.classList.remove('hidden');
+                    }
                 } else {
                     cloudUI.status.textContent = '未連携';
                     cloudUI.status.style.color = 'var(--text-secondary)';
+                    if(alertEl) alertEl.classList.add('hidden');
                 }
             }
 
@@ -655,19 +692,22 @@
 
                 // 分析項目12カテゴリ（analysisItemsDataから）
                 for (let i = 0; i < 12; i++) {
-                    const catObj = analysisItemsData.categories[i] || { name: "", items: [] };
+                    const catObj = (analysisItemsData && analysisItemsData.categories) ? analysisItemsData.categories[i] : null;
+                    const cName = catObj ? catObj.name : "";
+                    const cItems = catObj ? catObj.items : [];
+                    
                     const k = `cat${i + 1}`;
                     fields[k] = get(k); // 再取得を確実にするため
                     const el = fields[k]; if (!el) continue;
                     
                     // ラベルの更新
                     const lbl = get(`lbl_${k}`);
-                    if (lbl) lbl.textContent = catObj.name || `カテゴリ${i + 1}`;
+                    if (lbl) lbl.textContent = cName || `カテゴリ${i + 1}`;
                     
                     const prev = el.value; el.innerHTML = '';
                     el.appendChild(document.createElement('option')); // 空の初期値
                     
-                    const opts = catObj.items || [];
+                    const opts = cItems || [];
                     opts.forEach(o => { const op = document.createElement('option'); op.value = o; op.textContent = o; el.appendChild(op); });
                     if (prev && opts.includes(prev)) el.value = prev;
                 }
@@ -718,15 +758,20 @@
                     try {
                         const saved = localStorage.getItem('fx_analysis_items');
                         if (saved) {
-                            analysisItemsData = JSON.parse(saved);
-                            loaded = true;
+                            const parsed = JSON.parse(saved);
+                            // すべてのカテゴリが空欄だった場合は、初期不良データとして扱いロードしない
+                            const allEmpty = parsed.categories && parsed.categories.every(c => !c.name && (!c.items || c.items.length === 0));
+                            if (!allEmpty) {
+                                analysisItemsData = parsed;
+                                loaded = true;
+                            }
                         }
                     } catch(e) {}
                 }
                 
-                // 4. 全部ダメなら空白状態を保つ
+                // 4. 全部ダメなら初期値を保つ
                 if (!analysisItemsData || !analysisItemsData.categories) {
-                    analysisItemsData = { categories: Array(12).fill({ name: "", items: [] }) };
+                    analysisItemsData = JSON.parse(JSON.stringify(DEFAULT_ANALYSIS_ITEMS));
                 }
                 
                 // 項目数が足りなければ12カテゴリまで空白で埋める処理
@@ -885,7 +930,7 @@
                 sc.appendChild(catHeader);
                 
                 for(let i=0; i<12; i++) {
-                    const cat = analysisItemsData.categories[i] || { name: "", items: [] };
+                    const catObj = (analysisItemsData && analysisItemsData.categories) ? analysisItemsData.categories[i] : null;
                     const div = document.createElement('div'); div.className = 'setting-item';
                     div.style.background = "rgba(0,0,0,0.15)";
                     div.style.padding = "10px";
@@ -893,8 +938,8 @@
                     div.style.marginTop = "10px";
                     div.style.border = "1px solid var(--border-color)";
                     
-                    const cName = cat.name || "";
-                    const cItems = (cat.items || []).join('\n');
+                    const cName = catObj ? catObj.name : "";
+                    const cItems = (catObj && catObj.items) ? catObj.items.join('\n') : "";
                     div.innerHTML = `
                         <div style="margin-bottom:6px;">
                             <label style="color:var(--success);">[${i < 6 ? 'タブ1' : 'タブ2'}] カテゴリ ${i+1} 名前</label>
@@ -956,11 +1001,15 @@
             };
 
             // クラウド連携ボタン
-            cloudUI.loginBtn.onclick = () => {
+            const doDriveAuth = () => {
                 if (!googleTokenClient) initGoogleAuth();
                 if (googleTokenClient) googleTokenClient.requestAccessToken();
                 else showToast('Google SDK 初期化失敗', 'error');
             };
+            
+            cloudUI.loginBtn.onclick = doDriveAuth;
+            const topReconnectBtn = get('topReconnectBtn');
+            if(topReconnectBtn) topReconnectBtn.onclick = doDriveAuth;
             cloudUI.logoutBtn.onclick = () => {
                 if (confirm('連携を解除しますか？')) {
                     cloudConfig = { service: null, folderId: null, folderName: null };
