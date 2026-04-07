@@ -567,8 +567,16 @@
                                 if (response.access_token) {
                                     cloudConfig.service = 'Google Drive';
                                     cloudConfig.accessToken = response.access_token;
-                                    listGoogleFolders();
-                                    await loadAnalysisItems();
+                                    
+                                    if (cloudConfig.folderId) {
+                                        // 既にフォルダが設定されていれば再接続完了なので即座に読み込む
+                                        updateCloudUI();
+                                        await loadAnalysisItems();
+                                        showToast('Driveに再接続しました', 'success');
+                                    } else {
+                                        // 新規連携または連携解除後の場合はフォルダ選択を促す
+                                        listGoogleFolders();
+                                    }
                                 }
                             },
                         });
@@ -578,11 +586,44 @@
 
             async function listGoogleFolders() {
                 try {
-                    const resp = await fetch('https://www.googleapis.com/drive/v3/files?q=mimeType=\'application/vnd.google-apps.folder\'+and+trashed=false&fields=files(id,name)&pageSize=100', {
+                    // ルートフォルダのIDを取得 (親フォルダ名表示のため)
+                    let rootId = '';
+                    try {
+                        const rootRes = await fetch('https://www.googleapis.com/drive/v3/files/root?fields=id', {
+                            headers: { 'Authorization': `Bearer ${cloudConfig.accessToken}` }
+                        });
+                        if (rootRes.ok) {
+                            const rootData = await rootRes.json();
+                            rootId = rootData.id;
+                        }
+                    } catch(e) {}
+
+                    const resp = await fetch('https://www.googleapis.com/drive/v3/files?q=mimeType=\'application/vnd.google-apps.folder\'+and+trashed=false&fields=files(id,name,parents)&pageSize=1000', {
                         headers: { 'Authorization': `Bearer ${cloudConfig.accessToken}` }
                     });
                     const data = await resp.json();
-                    const folders = [{ id: 'root', name: '📁 マイドライブ (ルート)' }, ...(data.files || [])];
+                    
+                    const folderMap = new Map();
+                    if (rootId) folderMap.set(rootId, 'マイドライブ');
+                    (data.files || []).forEach(f => {
+                        folderMap.set(f.id, f.name);
+                    });
+
+                    const folders = [{ id: 'root', name: '📁 マイドライブ (ルート)' }];
+                    (data.files || []).forEach(f => {
+                        let dispName = f.name;
+                        if (f.parents && f.parents.length > 0) {
+                            const pName = folderMap.get(f.parents[0]);
+                            if (pName) dispName = `${pName} / ${f.name}`;
+                        }
+                        folders.push({ id: f.id, name: dispName });
+                    });
+
+                    // フォルダを名前順にソート（先頭のルートアイテムは除く）
+                    const rootF = folders.shift();
+                    folders.sort((a, b) => a.name.localeCompare(b.name));
+                    folders.unshift(rootF);
+
                     renderFolderList(folders);
                 } catch (e) { console.error(e); showToast('フォルダ取得失敗', 'error'); }
             }
@@ -736,6 +777,9 @@
                                     loaded = true;
                                     showToast('Driveから分析項目を読み込みました', 'success');
                                 }
+                            } else {
+                                console.warn('Drive file not found in selected folder');
+                                showToast('選択されたDriveフォルダに analysis_items.json が見つかりません', 'warning');
                             }
                         }
                     } catch(e) { console.warn('Drive read error', e); }
@@ -927,6 +971,26 @@
                 catHeader.style.color = "var(--accent-color)";
                 catHeader.style.borderBottom = "1px solid var(--border-color)";
                 catHeader.style.paddingBottom = "5px";
+                catHeader.style.display = "flex";
+                catHeader.style.justifyContent = "space-between";
+                catHeader.style.alignItems = "center";
+                
+                const restoreBtn = document.createElement('button');
+                restoreBtn.type = "button";
+                restoreBtn.textContent = "初期データ(全12項)をセット";
+                restoreBtn.style.fontSize = "0.75rem";
+                restoreBtn.style.padding = "4px 8px";
+                restoreBtn.style.backgroundColor = "var(--accent-color)";
+                restoreBtn.style.color = "white";
+                restoreBtn.style.border = "none";
+                restoreBtn.style.borderRadius = "4px";
+                restoreBtn.onclick = () => {
+                   if(confirm('分析項目を最初の12カテゴリ構成にリセットしますか？')) {
+                       analysisItemsData = JSON.parse(JSON.stringify(DEFAULT_ANALYSIS_ITEMS));
+                       get('saveSettingsBtn').click(); // 保存処理をトリガー
+                   }
+                };
+                catHeader.appendChild(restoreBtn);
                 sc.appendChild(catHeader);
                 
                 for(let i=0; i<12; i++) {
@@ -1019,14 +1083,17 @@
                     showToast('連携を解除しました', 'success');
                 }
             };
-            cloudUI.confirmBtn.onclick = () => {
+            cloudUI.confirmBtn.onclick = async () => {
                 if (!selectedFolder) { showToast('フォルダを選択してください', 'error'); return; }
                 cloudConfig.folderId = selectedFolder.id;
                 cloudConfig.folderName = selectedFolder.name;
                 localStorage.setItem('fx_cloud_config', JSON.stringify(cloudConfig));
                 updateCloudUI();
                 cloudUI.picker.classList.add('hidden');
-                showToast(`保存先を「${selectedFolder.name}」に設定`, 'success');
+                showToast(`保存先を「${selectedFolder.name}」に設定しました`, 'success');
+                
+                // フォルダ設定が完了したので即座にDriveからロードを試みる
+                await loadAnalysisItems();
             };
 
             // ── CSV保存 ──
