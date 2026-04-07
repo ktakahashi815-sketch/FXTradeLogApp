@@ -124,6 +124,12 @@
         }
         .folder-item:hover { background: rgba(255,255,255,0.05); }
         .folder-item.selected { background: var(--accent-color); color: white; }
+        /* ── タブ UI ── */
+        .tab-buttons { display: flex; gap: 4px; margin-bottom: 8px; }
+        .tab-btn { flex: 1; padding: 6px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-secondary); cursor: pointer; border-radius: 6px; font-weight: 600; font-size: 0.85rem; }
+        .tab-btn.active { background: var(--accent-color); color: white; border-color: var(--accent-color); }
+        .tab-group { display: none; }
+        .tab-group.active { display: block; }
     </style>
 </head>
 <body>
@@ -188,16 +194,34 @@
                 </div>
             </section>
 
-            <!-- ▼ RCI / 分析 (2列 / 左寄せ維持) -->
+            <!-- ▼ 分析項目 (2列 / タブ切り替え) -->
             <section class="form-section">
-                <h2 class="section-subtitle">▼RCI / 分析項目</h2>
-                <div class="grid-2col">
-                    <div class="form-group"><label for="shortRci">短期 RCI</label><select id="shortRci"></select></div>
-                    <div class="form-group"><label for="midRci">中期 RCI</label><select id="midRci"></select></div>
-                    <div class="form-group"><label for="longRci">長期 RCI</label><select id="longRci"></select></div>
-                    <div class="form-group"><label for="totalRci">全体 RCI</label><select id="totalRci"></select></div>
-                    <div class="form-group"><label for="entryReason">エントリー理由</label><select id="entryReason"></select></div>
-                    <div class="form-group"><label for="exitReason">エグジット理由</label><select id="exitReason"></select></div>
+                <h2 class="section-subtitle">▼分析項目</h2>
+                <div class="tab-buttons">
+                    <button type="button" class="tab-btn active" onclick="switchTab(this, 'tab1')">タブ1 (1-6)</button>
+                    <button type="button" class="tab-btn" onclick="switchTab(this, 'tab2')">タブ2 (7-12)</button>
+                </div>
+                <div id="tab1" class="tab-group active">
+                    <div class="grid-2col">
+                        <div class="form-group"><label id="lbl_cat1" for="cat1">カテゴリ1</label><select id="cat1"></select></div>
+                        <div class="form-group"><label id="lbl_cat2" for="cat2">カテゴリ2</label><select id="cat2"></select></div>
+                        <div class="form-group"><label id="lbl_cat3" for="cat3">カテゴリ3</label><select id="cat3"></select></div>
+                        <div class="form-group"><label id="lbl_cat4" for="cat4">カテゴリ4</label><select id="cat4"></select></div>
+                        <div class="form-group"><label id="lbl_cat5" for="cat5">カテゴリ5</label><select id="cat5"></select></div>
+                        <div class="form-group"><label id="lbl_cat6" for="cat6">カテゴリ6</label><select id="cat6"></select></div>
+                    </div>
+                </div>
+                <div id="tab2" class="tab-group">
+                    <div class="grid-2col">
+                        <div class="form-group"><label id="lbl_cat7" for="cat7">カテゴリ7</label><select id="cat7"></select></div>
+                        <div class="form-group"><label id="lbl_cat8" for="cat8">カテゴリ8</label><select id="cat8"></select></div>
+                        <div class="form-group"><label id="lbl_cat9" for="cat9">カテゴリ9</label><select id="cat9"></select></div>
+                        <div class="form-group"><label id="lbl_cat10" for="cat10">カテゴリ10</label><select id="cat10"></select></div>
+                        <div class="form-group"><label id="lbl_cat11" for="cat11">カテゴリ11</label><select id="cat11"></select></div>
+                        <div class="form-group"><label id="lbl_cat12" for="cat12">カテゴリ12</label><select id="cat12"></select></div>
+                    </div>
+                </div>
+                <div class="grid-2col" style="margin-top:8px;">
                     <div class="form-group" style="grid-column: span 2;"><label for="remarks">備考</label><textarea id="remarks" rows="1"></textarea></div>
                 </div>
             </section>
@@ -257,13 +281,22 @@
             const WORKER_NAME = "kazuhiro-fxproxy.k-takahashi815"; 
             const GOOGLE_CLIENT_ID = '330341346642-dbq8o9c5jcev15c3cr8h89729nhhnbdo.apps.googleusercontent.com';
 
+            window.switchTab = (btn, destId) => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-group').forEach(g => g.classList.remove('active'));
+                btn.classList.add('active');
+                get(destId).classList.add('active');
+            };
+
             // ── DOM要素の参照 ──
             const fields = {
                 date: get('date'), no: get('no'), entryTime: get('entryTime'), serverTime: get('serverTime'),
                 exitTime: get('exitTime'), currency: get('currency'), lot: get('lot'), side: get('side'),
                 entPrice: get('entPrice'), extPrice: get('extPrice'), pips: get('pips'), profit: get('profit'),
-                shortRci: get('shortRci'), midRci: get('midRci'), longRci: get('longRci'), totalRci: get('totalRci'),
-                entryReason: get('entryReason'), exitReason: get('exitReason'), remarks: get('remarks'),
+                cat1: get('cat1'), cat2: get('cat2'), cat3: get('cat3'), cat4: get('cat4'),
+                cat5: get('cat5'), cat6: get('cat6'), cat7: get('cat7'), cat8: get('cat8'),
+                cat9: get('cat9'), cat10: get('cat10'), cat11: get('cat11'), cat12: get('cat12'),
+                remarks: get('remarks'),
                 profitOffset: get('profitOffset')
             };
 
@@ -284,14 +317,15 @@
                 "CHF/JPY": "CHFJPY=X", "XAUUSD":  "XAUUSD=X"
             };
 
-            // ── デフォルト設定（通貨ペアを11種に拡張）──
+            // ── 分析項目の状態管理 ──
+            let analysisItemsData = { categories: Array(12).fill({ name: "", items: [] }) };
+            let analysisItemsFileId = null;
+
+            // ── デフォルト設定 ──
             const DEFAULT_SETTINGS = {
                 currency: ["EUR/JPY", "USD/JPY", "GBP/JPY", "EUR/USD", "GBP/USD",
                            "CAD/JPY", "TRY/JPY", "AUD/JPY", "NZD/JPY", "CHF/JPY", "XAUUSD"],
                 lot: ["1", "5", "10"], side: ["買", "売"],
-                shortRci: ["正規ターン", "張り付き", "ガタガタ"], midRci: ["正規ターン", "張り付き", "ガタガタ"],
-                longRci: ["正規ターン", "張り付き", "ガタガタ"], totalRci: ["正規ターン", "張り付き", "ガタガタ"],
-                entryReason: ["短期正規", "中期正規", "分析なし"], exitReason: ["利確", "損切", "時間切れ"],
                 cyprusOffset: -6
             };
 
@@ -505,11 +539,12 @@
                         googleTokenClient = google.accounts.oauth2.initTokenClient({
                             client_id: GOOGLE_CLIENT_ID,
                             scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.metadata.readonly',
-                            callback: (response) => {
+                            callback: async (response) => {
                                 if (response.access_token) {
                                     cloudConfig.service = 'Google Drive';
                                     cloudConfig.accessToken = response.access_token;
                                     listGoogleFolders();
+                                    await loadAnalysisItems();
                                 }
                             },
                         });
@@ -542,15 +577,26 @@
                 cloudUI.picker.classList.remove('hidden');
             }
 
-            async function uploadToGoogleDrive(csvContent, fileName) {
+            async function uploadToGoogleDrive(content, fileName, mimeType = 'text/csv', existingFileId = null) {
                 try {
-                    const metadata = { name: fileName, parents: [cloudConfig.folderId] };
+                    const metadata = { name: fileName };
+                    if (!existingFileId) metadata.parents = [cloudConfig.folderId];
                     const form = new FormData();
                     form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-                    form.append('file', new Blob([csvContent], { type: 'text/csv' }));
-                    const resp = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                        method: 'POST', headers: { 'Authorization': `Bearer ${cloudConfig.accessToken}` }, body: form
+                    form.append('file', new Blob([content], { type: mimeType }));
+                    
+                    const url = existingFileId 
+                        ? `https://www.googleapis.com/upload/drive/v3/files/${existingFileId}?uploadType=multipart`
+                        : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+                    const method = existingFileId ? 'PATCH' : 'POST';
+
+                    const resp = await fetch(url, {
+                        method: method, headers: { 'Authorization': `Bearer ${cloudConfig.accessToken}` }, body: form
                     });
+                    if (resp.ok && !existingFileId) {
+                        const data = await resp.json();
+                        return data.id; // 新規作成時は ID を返す
+                    }
                     return resp.ok;
                 } catch (e) { console.error(e); return false; }
             }
@@ -597,17 +643,98 @@
                 fields.serverTime.value = String(sh).padStart(2, '0') + ':' + String(m).padStart(2, '0');
             }
             function renderSelects() {
-                const keys = ["currency", "lot", "side", "shortRci", "midRci", "longRci", "totalRci", "entryReason", "exitReason"];
+                // 基本の3セレクト（設定から）
+                const keys = ["currency", "lot", "side"];
                 keys.forEach(k => {
                     const el = fields[k]; if (!el) return;
                     const prev = el.value; el.innerHTML = '';
-                    if (["shortRci", "midRci", "longRci", "totalRci", "entryReason", "exitReason"].includes(k)) {
-                        el.appendChild(document.createElement('option'));
-                    }
                     const opts = settings[k] || [];
                     opts.forEach(o => { const op = document.createElement('option'); op.value = o; op.textContent = o; el.appendChild(op); });
                     if (prev && opts.includes(prev)) el.value = prev;
                 });
+
+                // 分析項目12カテゴリ（analysisItemsDataから）
+                for (let i = 0; i < 12; i++) {
+                    const catObj = analysisItemsData.categories[i] || { name: "", items: [] };
+                    const k = `cat${i + 1}`;
+                    fields[k] = get(k); // 再取得を確実にするため
+                    const el = fields[k]; if (!el) continue;
+                    
+                    // ラベルの更新
+                    const lbl = get(`lbl_${k}`);
+                    if (lbl) lbl.textContent = catObj.name || `カテゴリ${i + 1}`;
+                    
+                    const prev = el.value; el.innerHTML = '';
+                    el.appendChild(document.createElement('option')); // 空の初期値
+                    
+                    const opts = catObj.items || [];
+                    opts.forEach(o => { const op = document.createElement('option'); op.value = o; op.textContent = o; el.appendChild(op); });
+                    if (prev && opts.includes(prev)) el.value = prev;
+                }
+            }
+
+            // ── 分析項目データのハイブリッド読み込みロジック ──
+            async function loadAnalysisItems() {
+                let loaded = false;
+                
+                // 1. Google Driveから読み込み
+                if (cloudConfig.service && cloudConfig.accessToken && cloudConfig.folderId) {
+                    try {
+                        const q = encodeURIComponent(`name='analysis_items.json' and trashed=false and '${cloudConfig.folderId}' in parents`);
+                        let res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)`, {
+                            headers: { 'Authorization': `Bearer ${cloudConfig.accessToken}` }
+                        });
+                        if (res.ok) {
+                            let data = await res.json();
+                            if (data.files && data.files.length > 0) {
+                                analysisItemsFileId = data.files[0].id;
+                                let downloadRes = await fetch(`https://www.googleapis.com/drive/v3/files/${analysisItemsFileId}?alt=media`, {
+                                    headers: { 'Authorization': `Bearer ${cloudConfig.accessToken}` }
+                                });
+                                if (downloadRes.ok) {
+                                    analysisItemsData = await downloadRes.json();
+                                    loaded = true;
+                                    showToast('Driveから分析項目を読み込みました', 'success');
+                                }
+                            }
+                        }
+                    } catch(e) { console.warn('Drive read error', e); }
+                }
+                
+                // 2. Driveから読めなければローカルファイルを試す
+                if (!loaded) {
+                    try {
+                        let localRes = await fetch('analysis_items.json?t=' + Date.now()); // キャッシュ回避
+                        if (localRes.ok) {
+                            analysisItemsData = await localRes.json();
+                            loaded = true;
+                            // console.log('Local file loaded');
+                        }
+                    } catch(e) { console.warn('Local file read skipped'); }
+                }
+
+                // 3. ローカルファイルもない場合は localStorage を試す
+                if (!loaded) {
+                    try {
+                        const saved = localStorage.getItem('fx_analysis_items');
+                        if (saved) {
+                            analysisItemsData = JSON.parse(saved);
+                            loaded = true;
+                        }
+                    } catch(e) {}
+                }
+                
+                // 4. 全部ダメなら空白状態を保つ
+                if (!analysisItemsData || !analysisItemsData.categories) {
+                    analysisItemsData = { categories: Array(12).fill({ name: "", items: [] }) };
+                }
+                
+                // 項目数が足りなければ12カテゴリまで空白で埋める処理
+                while (analysisItemsData.categories.length < 12) {
+                    analysisItemsData.categories.push({ name: "", items: [] });
+                }
+
+                renderSelects();
             }
             function updateTotals() {
                 const pSum = trades.reduce((a, t) => a + (parseFloat(t.profit) || 0), 0);
@@ -704,7 +831,7 @@
                 get('editIndex').value = "-1";
                 saveBtn.textContent = "更新";
                 saveBtn.disabled = false;
-                init();
+                initForm();
             };
             
             // ────────────────────────────────────
@@ -734,35 +861,85 @@
                 if (confirm('削除しますか？')) {
                     trades.splice(i, 1);
                     localStorage.setItem('fx_trades', JSON.stringify(trades));
-                    init();
+                    initForm();
                 }
             };
 
             // ── 設定モーダル ──
             get('settingsBtn').onclick = () => {
                 const sc = get('settingsContainer'); sc.innerHTML = '';
-                const labels = {
-                    currency:"通貨ペア", lot:"LOT", side:"売買",
-                    shortRci:"短期RCI", midRci:"中期RCI", longRci:"長期RCI", totalRci:"全体RCI",
-                    entryReason:"エントリー理由", exitReason:"エグジット理由"
-                };
-                Object.keys(labels).forEach(k => {
+                const basicSettings = { currency:"通貨ペア", lot:"LOT", side:"売買" };
+                Object.keys(basicSettings).forEach(k => {
                     const div = document.createElement('div'); div.className = 'setting-item';
-                    div.innerHTML = `<label>${labels[k]}</label><textarea id="set_${k}">${(settings[k]||[]).join('\n')}</textarea>`;
+                    div.innerHTML = `<label>${basicSettings[k]}</label><textarea id="set_${k}">${(settings[k]||[]).join('\n')}</textarea>`;
                     sc.appendChild(div);
                 });
+
+                // 分析項目12カテゴリの編集 UI
+                const catHeader = document.createElement('h3');
+                catHeader.textContent = "▼ 分析項目の設定 (全体的なタブ設定)";
+                catHeader.style.marginTop = "15px";
+                catHeader.style.color = "var(--accent-color)";
+                catHeader.style.borderBottom = "1px solid var(--border-color)";
+                catHeader.style.paddingBottom = "5px";
+                sc.appendChild(catHeader);
+                
+                for(let i=0; i<12; i++) {
+                    const cat = analysisItemsData.categories[i] || { name: "", items: [] };
+                    const div = document.createElement('div'); div.className = 'setting-item';
+                    div.style.background = "rgba(0,0,0,0.15)";
+                    div.style.padding = "10px";
+                    div.style.borderRadius = "8px";
+                    div.style.marginTop = "10px";
+                    div.style.border = "1px solid var(--border-color)";
+                    
+                    const cName = cat.name || "";
+                    const cItems = (cat.items || []).join('\n');
+                    div.innerHTML = `
+                        <div style="margin-bottom:6px;">
+                            <label style="color:var(--success);">[${i < 6 ? 'タブ1' : 'タブ2'}] カテゴリ ${i+1} 名前</label>
+                            <input type="text" id="cat_name_${i}" value="${cName}" placeholder="空白でもOK" style="margin-top:2px;">
+                        </div>
+                        <div>
+                            <label>項目リスト (改行区切り)</label>
+                            <textarea id="cat_items_${i}" rows="3" placeholder="空白でもOK" style="margin-top:2px;">${cItems}</textarea>
+                        </div>
+                    `;
+                    sc.appendChild(div);
+                }
                 const os = get('offsetSummer'); const ow = get('offsetWinter');
                 if(os) os.checked = (settings.cyprusOffset === -6);
                 if(ow) ow.checked = (settings.cyprusOffset === -7);
                 get('settingsModal').classList.remove('hidden');
             };
-            get('saveSettingsBtn').onclick = () => {
-                const keys = ["currency", "lot", "side", "shortRci", "midRci", "longRci", "totalRci", "entryReason", "exitReason"];
+            get('saveSettingsBtn').onclick = async () => {
+                const keys = ["currency", "lot", "side"];
                 keys.forEach(k => { const el = get(`set_${k}`); if(el) settings[k] = el.value.split('\n').map(s=>s.trim()).filter(s=>s); });
                 const ck = document.querySelector('input[name="offsetType"]:checked');
                 if(ck) settings.cyprusOffset = parseInt(ck.value);
+                
                 localStorage.setItem('fx_settings', JSON.stringify(settings));
                 localStorage.setItem('fx_cloud_config', JSON.stringify(cloudConfig)); // クラウド設定も保存
+
+                // カテゴリデータの保存
+                let newCats = [];
+                for(let i=0; i<12; i++) {
+                    const nEl = get(`cat_name_${i}`);
+                    const iEl = get(`cat_items_${i}`);
+                    const n = nEl ? nEl.value.trim() : "";
+                    const it = iEl ? iEl.value.split('\n').map(s=>s.trim()).filter(s=>s) : [];
+                    newCats.push({ name: n, items: it });
+                }
+                analysisItemsData.categories = newCats;
+                localStorage.setItem('fx_analysis_items', JSON.stringify(analysisItemsData));
+
+                // Driveに保存
+                if (cloudConfig.service && cloudConfig.folderId && cloudConfig.accessToken) {
+                    showToast('分析項目を共有ドライブにも保存中...', 'success');
+                    const uploadRes = await uploadToGoogleDrive(JSON.stringify(analysisItemsData, null, 2), 'analysis_items.json', 'application/json', analysisItemsFileId);
+                    if (typeof uploadRes === 'string') analysisItemsFileId = uploadRes; // 新規ID
+                }
+
                 get('settingsModal').classList.add('hidden');
                 renderSelects();
                 updateCloudUI();
@@ -774,7 +951,7 @@
                     localStorage.setItem('fx_trades', JSON.stringify(trades));
                     cloudConfig = { service: null, folderId: null, folderName: null };
                     localStorage.removeItem('fx_cloud_config');
-                    init();
+                    initForm();
                 }
             };
 
@@ -840,15 +1017,20 @@
             // ────────────────────────────────────
             // ■ 初期化
             // ────────────────────────────────────
-                function init() {
+            function initForm() {
                 renderSelects(); updateAutoNo(); updateTotals(); renderList();
                 if(fields.date && !fields.date.value) fields.date.value = new Date().toISOString().slice(0,10);
                 updateDateDisplay();
-                updateCloudUI();
-                initGoogleAuth();
                 updatePriceStep();
             }
-            init();
+
+            async function startup() {
+                updateCloudUI();
+                initGoogleAuth();
+                await loadAnalysisItems(); // ここでrenderSelectsされる
+                initForm();
+            }
+            startup();
         });
     </script>
 </body>
