@@ -1467,13 +1467,16 @@
             const tbdBtn = get('tbdBtn');
             if (tbdBtn) {
                 tbdBtn.onclick = async () => {
-                    if (!mt4DirHandle) {
-                        showToast('設定画面からMT4保存フォルダを選択してください', 'warn');
-                        return;
-                    }
-                    if (!(await verifyPermission(mt4DirHandle, true))) {
-                        showToast('フォルダへのアクセス権限がありません', 'error');
-                        return;
+                    // MT4フォルダハンドルの確認（設定されていない場合はダウンロード方式へのフォールバックを案内）
+                    let useApi = false;
+                    if (mt4DirHandle) {
+                        if (await verifyPermission(mt4DirHandle, true)) {
+                            useApi = true;
+                        } else {
+                            showToast('フォルダへのアクセス権限がないため、ダウンロード方式で保存します', 'warn');
+                        }
+                    } else {
+                         // showToast('フォルダが未設定のため、ダウンロード方式で保存します', 'warn'); // 毎回出ると煩わしいため省略可能
                     }
 
                     const fxCompany = get('fxCompanySelect').value;
@@ -1596,11 +1599,27 @@
                         const dateStr = dateVal.replace(/-/g, '');
                         const outFileName = `MT4_${companyName}_${dateStr}.csv`;
                         
-                        const newFileHandle = await mt4DirHandle.getFileHandle(outFileName, { create: true });
-                        const writable = await newFileHandle.createWritable();
-                        await writable.write(outCsv);
-                        await writable.close();
-                        showToast(`MT4用CSVを作成しました（${mt4Rows.length}件）`, 'success');
+                        if (useApi) {
+                            try {
+                                const newFileHandle = await mt4DirHandle.getFileHandle(outFileName, { create: true });
+                                const writable = await newFileHandle.createWritable();
+                                await writable.write(outCsv);
+                                await writable.close();
+                                showToast(`MT4用CSVを作成しました（${mt4Rows.length}件）`, 'success');
+                                return; // 成功したので終了
+                            } catch (e) {
+                                console.warn('API保存失敗、ダウンロードへフォールバック', e);
+                                showToast('フォルダ保存失敗。ダウンロード方式へ切替', 'warn');
+                            }
+                        }
+                        
+                        // APIが使えない/失敗した場合は通常のダウンロード処理（OS標準の保存ダイアログに委譲できる）
+                        const b = new Blob([outCsv], { type: 'text/csv' });
+                        const a = document.createElement('a');
+                        a.href = URL.createObjectURL(b);
+                        a.download = outFileName;
+                        a.click();
+                        showToast(`MT4用CSVを作成しました。手動で保存してください`, 'success');
 
                     } catch (e) {
                         console.error(e);
