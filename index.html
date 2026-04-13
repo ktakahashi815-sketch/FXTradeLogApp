@@ -274,7 +274,10 @@
                     <div style="margin-top:25px; padding-top:15px; border-top:1px dashed var(--border-color);">
                         <label>MT4 用 CSV 保存先フォルダ</label>
                         <div id="mt4FolderStatus" class="cloud-status">未選択</div>
-                        <button type="button" id="selectMt4FolderBtn" class="btn accent" style="padding:8px; font-size:0.85rem; width:auto;">MT4保存フォルダ選択</button>
+                        <div style="display:flex; gap:5px;">
+                            <button type="button" id="selectMt4FolderBtn" class="btn accent" style="padding:8px; font-size:0.85rem; width:auto;">MT4保存フォルダ選択</button>
+                            <button type="button" id="clearMt4FolderBtn" class="btn secondary" style="padding:8px; font-size:0.85rem; width:auto; background:#64748b; color:white;">選択解除</button>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer" style="padding:15px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
@@ -1445,6 +1448,21 @@
                     } catch (e) {
                         console.error(e);
                     }
+                };
+            }
+
+            const clearMt4FolderBtn = get('clearMt4FolderBtn');
+            if (clearMt4FolderBtn) {
+                clearMt4FolderBtn.onclick = async () => {
+                    const db = await initDB();
+                    const tx = db.transaction("handles", "readwrite");
+                    tx.objectStore("handles").delete("mt4Folder");
+                    mt4DirHandle = null;
+                    if (mt4FolderStatus) {
+                        mt4FolderStatus.textContent = '未選択';
+                        mt4FolderStatus.style.color = 'var(--text-secondary)';
+                    }
+                    showToast('MT4保存フォルダ設定を解除しました', 'success');
                 };
             }
 
