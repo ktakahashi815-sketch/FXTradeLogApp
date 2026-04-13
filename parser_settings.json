@@ -1,0 +1,16 @@
+{
+  "companies": [
+    {
+      "id": "hirose",
+      "name": "ヒロセ通商",
+      "from": "lfx@hirose-fx.co.jp",
+      "subjectKeyword": "注文成立のお知らせ"
+    },
+    {
+      "id": "gmo",
+      "name": "GMOクリック証券（デモ）",
+      "from": "info-demo@click-sec.com",
+      "subjectKeyword": "約定通知"
+    }
+  ]
+}
