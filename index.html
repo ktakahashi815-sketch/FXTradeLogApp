@@ -235,7 +235,7 @@
                 <button type="submit" id="saveBtn" class="btn primary">更新</button>
                 <button type="button" id="exportBtn" class="btn accent">分析内容保存</button>
                 <button type="button" id="fetchMailBtn" class="btn" style="background-color: #f59e0b; color: white;">メール取得</button>
-                <button type="button" id="tbdBtn" class="btn" style="background-color: #64748b; color: white;">TBD</button>
+                <button type="button" id="tbdBtn" class="btn" style="background-color: #64748b; color: white;">MT4用保存</button>
             </div>
             <input type="hidden" id="editIndex" value="-1">
         </form>
@@ -268,6 +268,13 @@
                             <ul id="folderList" class="folder-list"></ul>
                             <button type="button" id="confirmFolderBtn" class="btn primary" style="margin-top:10px;padding:8px;font-size:0.85rem;">このフォルダに保存</button>
                         </div>
+                    </div>
+                    
+                    <!-- MT4保存先セクション -->
+                    <div style="margin-top:25px; padding-top:15px; border-top:1px dashed var(--border-color);">
+                        <label>MT4 用 CSV 保存先フォルダ</label>
+                        <div id="mt4FolderStatus" class="cloud-status">未選択</div>
+                        <button type="button" id="selectMt4FolderBtn" class="btn accent" style="padding:8px; font-size:0.85rem; width:auto;">MT4保存フォルダ選択</button>
                     </div>
                 </div>
                 <div class="modal-footer" style="padding:15px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
@@ -1377,6 +1384,235 @@
             };
 
             // ────────────────────────────────────
+            // ■ MT4 用保存処理
+            // ────────────────────────────────────
+            const initDB = () => {
+                return new Promise((resolve, reject) => {
+                    const req = indexedDB.open("MT4AppDB", 1);
+                    req.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains("handles")) db.createObjectStore("handles");
+                    };
+                    req.onsuccess = (e) => resolve(e.target.result);
+                    req.onerror = (e) => reject(e.target.error);
+                });
+            };
+
+            const saveHandle = async (key, handle) => {
+                const db = await initDB();
+                const tx = db.transaction("handles", "readwrite");
+                tx.objectStore("handles").put(handle, key);
+                return new Promise(r => { tx.oncomplete = () => r(true); tx.onerror = () => r(false); });
+            };
+
+            const getHandle = async (key) => {
+                const db = await initDB();
+                const tx = db.transaction("handles", "readonly");
+                const req = tx.objectStore("handles").get(key);
+                return new Promise(r => { req.onsuccess = () => r(req.result); req.onerror = () => r(null); });
+            };
+
+            let mt4DirHandle = null;
+            const mt4FolderStatus = get('mt4FolderStatus');
+            const selectMt4FolderBtn = get('selectMt4FolderBtn');
+
+            const verifyPermission = async (fileHandle, readWrite) => {
+                const options = {};
+                if (readWrite) options.mode = 'readwrite';
+                if ((await fileHandle.queryPermission(options)) === 'granted') return true;
+                if ((await fileHandle.requestPermission(options)) === 'granted') return true;
+                return false;
+            };
+
+            const restoreMt4Handle = async () => {
+                mt4DirHandle = await getHandle('mt4Folder');
+                if (mt4DirHandle && mt4FolderStatus) {
+                    mt4FolderStatus.textContent = `選択済み: ${mt4DirHandle.name}`;
+                    mt4FolderStatus.style.color = 'var(--success)';
+                }
+            };
+
+            if (selectMt4FolderBtn) {
+                selectMt4FolderBtn.onclick = async () => {
+                    try {
+                        mt4DirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+                        await saveHandle('mt4Folder', mt4DirHandle);
+                        if (mt4FolderStatus) {
+                            mt4FolderStatus.textContent = `選択済み: ${mt4DirHandle.name}`;
+                            mt4FolderStatus.style.color = 'var(--success)';
+                        }
+                        showToast(`MT4保存フォルダを「${mt4DirHandle.name}」に設定しました`, 'success');
+                    } catch (e) {
+                        console.error(e);
+                    }
+                };
+            }
+
+            function toCyprusTimeStr(dateStr) {
+                // dateStr は 日本時間（JST）の文字列 例: "2026/04/13 10:00:00"
+                const d = new Date(dateStr);
+                if (isNaN(d.getTime())) return "";
+                // JSTのUnixTimeにオフセットの時間を足すことでキプロス時間の現在値(時分としての値)を作る
+                const cyprusTime = new Date(d.getTime() + (settings.cyprusOffset * 60 * 60 * 1000));
+                
+                const yy = cyprusTime.getFullYear();
+                const mm = String(cyprusTime.getMonth() + 1).padStart(2, '0');
+                const dd = String(cyprusTime.getDate()).padStart(2, '0');
+                const hh = String(cyprusTime.getHours()).padStart(2, '0');
+                const min = String(cyprusTime.getMinutes()).padStart(2, '0');
+                const ss = String(cyprusTime.getSeconds()).padStart(2, '0');
+                return `${yy}.${mm}.${dd} ${hh}:${min}:${ss}`;
+            }
+
+            const tbdBtn = get('tbdBtn');
+            if (tbdBtn) {
+                tbdBtn.onclick = async () => {
+                    if (!mt4DirHandle) {
+                        showToast('設定画面からMT4保存フォルダを選択してください', 'warn');
+                        return;
+                    }
+                    if (!(await verifyPermission(mt4DirHandle, true))) {
+                        showToast('フォルダへのアクセス権限がありません', 'error');
+                        return;
+                    }
+
+                    const fxCompany = get('fxCompanySelect').value;
+                    const dateVal = fields.date.value;
+                    if (!dateVal) {
+                        showToast('日付を指定してください', 'warn');
+                        return;
+                    }
+
+                    let prefix = "";
+                    let companyName = "";
+                    if (fxCompany === 'hirose') {
+                        prefix = "LION";
+                        companyName = "LION";
+                    } else if (fxCompany === 'gmo') {
+                        prefix = "GMOデモ";
+                        companyName = "GMO";
+                    } else {
+                        showToast('FX会社（ヒロセ通商 または GMO）を選択してください', 'warn');
+                        return;
+                    }
+
+                    try {
+                        const [fileHandle] = await window.showOpenFilePicker({
+                            types: [{
+                                description: 'CSV Files',
+                                accept: { 'text/csv': ['.csv'] }
+                            }],
+                            multiple: false
+                        });
+
+                        const file = await fileHandle.getFile();
+                        const text = await file.text();
+                        
+                        const lines = text.split('\n').filter(line => line.trim().length > 0);
+                        let dataIdxStart = 0;
+                        for (let i = 0; i < lines.length; i++) {
+                            if (lines[i].includes('"通番"') || lines[i].includes('通番,')) {
+                                dataIdxStart = i + 1;
+                                break;
+                            }
+                        }
+
+                        const csvData = [];
+                        for (let i = dataIdxStart; i < lines.length; i++) {
+                            const rowStr = lines[i];
+                            const cols = [];
+                            let inQuote = false;
+                            let cur = "";
+                            for (let j = 0; j < rowStr.length; j++) {
+                                const c = rowStr[j];
+                                if (c === '"') {
+                                    inQuote = !inQuote;
+                                } else if (c === ',' && !inQuote) {
+                                    cols.push(cur);
+                                    cur = "";
+                                } else {
+                                    cur += c;
+                                }
+                            }
+                            cols.push(cur);
+
+                            if (cols.length >= 10) {
+                                csvData.push({
+                                    execDate: cols[3].trim(),
+                                    currency: cols[5].trim(),
+                                    tradeType: cols[6].trim(),
+                                    side: cols[7].trim(),
+                                    lot: parseFloat(cols[8].trim()) || 0,
+                                    execPrice: cols[9].trim()
+                                });
+                            }
+                        }
+
+                        // ソート: 1.通貨ペア(昇順) 2.約定日時(古い順)
+                        csvData.sort((a, b) => {
+                            if (a.currency !== b.currency) return a.currency.localeCompare(b.currency);
+                            return new Date(a.execDate).getTime() - new Date(b.execDate).getTime();
+                        });
+
+                        const mt4Rows = [];
+                        const entryQueues = {};
+
+                        for (const row of csvData) {
+                            const curr = row.currency;
+                            const lot = row.lot;
+
+                            if (!entryQueues[curr]) entryQueues[curr] = {};
+                            if (!entryQueues[curr][lot]) entryQueues[curr][lot] = [];
+
+                            if (row.tradeType.includes("新規")) {
+                                entryQueues[curr][lot].push(row);
+                            } else if (row.tradeType.includes("決済")) {
+                                if (entryQueues[curr][lot].length > 0) {
+                                    const entryRow = entryQueues[curr][lot].shift();
+                                    mt4Rows.push({
+                                        settleDate: toCyprusTimeStr(row.execDate),
+                                        settlePrice: row.execPrice,
+                                        entryDate: toCyprusTimeStr(entryRow.execDate),
+                                        entryPrice: entryRow.execPrice,
+                                        currency: curr,
+                                        lot: lot
+                                    });
+                                }
+                            }
+                        }
+
+                        if (mt4Rows.length === 0) {
+                            showToast('ペアリング可能な取引がありませんでした', 'warn');
+                            return;
+                        }
+
+                        const header = ["NO", "決済約定日時", "決済約定値", "ENTRY約定日時", "ENTRY約定値", "通貨ペア", "LOT数"];
+                        let outCsv = "\ufeff" + header.join(",") + "\n";
+                        
+                        mt4Rows.forEach((r, idx) => {
+                            outCsv += `${idx+1},${r.settleDate},${r.settlePrice},${r.entryDate},${r.entryPrice},${r.currency},${r.lot}\n`;
+                        });
+
+                        const dateStr = dateVal.replace(/-/g, '');
+                        const outFileName = `MT4_${companyName}_${dateStr}.csv`;
+                        
+                        const newFileHandle = await mt4DirHandle.getFileHandle(outFileName, { create: true });
+                        const writable = await newFileHandle.createWritable();
+                        await writable.write(outCsv);
+                        await writable.close();
+                        showToast(`MT4用CSVを作成しました（${mt4Rows.length}件）`, 'success');
+
+                    } catch (e) {
+                        console.error(e);
+                        // キャンセル処理時はトーストを出さない
+                        if (e.name !== 'AbortError') {
+                            showToast('ファイル処理に失敗しました', 'error');
+                        }
+                    }
+                };
+            }
+
+            // ────────────────────────────────────
             // ■ 初期化
             // ────────────────────────────────────
             function initForm() {
@@ -1391,6 +1627,7 @@
                 initGoogleAuth();
                 await loadAnalysisItems(); // ここでrenderSelectsされる
                 await loadParserSettings(); // パーサー設定読み込み
+                await restoreMt4Handle(); // MT4ハンドル復元
                 initForm();
             }
             startup();
