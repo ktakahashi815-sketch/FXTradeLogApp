@@ -1330,15 +1330,19 @@
                             }
                         }
 
+                        // パーサー設定からキーワードを取得（ロード失敗時はデフォルト値）
+                        const hiroseKeyword = (parserSettings && parserSettings.companies.find(c => c.id === 'hirose'))?.subjectKeyword || "注文成立のお知らせ";
+                        const gmoKeyword = (parserSettings && parserSettings.companies.find(c => c.id === 'gmo'))?.subjectKeyword || "約定通知";
+
                         // パーサー割り当て
-                        if (from.includes("lfx@hirose-fx.co.jp") && subject.includes("注文成立のお知らせ")) {
+                        if (from.includes("lfx@hirose-fx.co.jp") && subject.includes(hiroseKeyword)) {
                             const parsed = parseHirose(bodyStr);
                             if (parsed) {
                                 parsed.emailSendTime = emailSendDate;
                                 parsed.emailRecvTime = emailRecvDate;
                                 mailsHirose.push(parsed);
                             }
-                        } else if (from.includes("info-demo@click-sec.com") && subject.includes("約定のお知らせ")) {
+                        } else if (from.includes("info-demo@click-sec.com") && subject.includes(gmoKeyword)) {
                             const parsed = parseGmo(bodyStr);
                             if (parsed) {
                                 parsed.emailSendTime = emailSendDate;
