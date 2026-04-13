@@ -1518,12 +1518,14 @@
                     }
 
                     try {
+                        showToast('ダウンロードフォルダから約定メールCSVを選択してください', 'success');
                         const [fileHandle] = await window.showOpenFilePicker({
                             types: [{
                                 description: 'CSV Files',
                                 accept: { 'text/csv': ['.csv'] }
                             }],
-                            multiple: false
+                            multiple: false,
+                            startIn: 'downloads'
                         });
 
                         const file = await fileHandle.getFile();
