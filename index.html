@@ -50,11 +50,6 @@
             text-align: center; 
             text-align-last: center;
         }
-        
-        .date-input-overlay {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 38px;
-            opacity: 0; cursor: pointer; z-index: 2;
-        }
 
         .display-box { background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 2px; font-size: 1rem; font-weight: 700; text-align: center; color: var(--success); min-height: 40px; display: flex; align-items: center; justify-content: center; }
         .display-box.negative { color: var(--danger); }
@@ -145,6 +140,11 @@
             <section class="form-section centered-inputs">
                 <div class="section-header-row">
                     <h2 class="section-title">◆ FX Trade Log / Quick & Easy</h2>
+                    <select id="fxCompanySelect" style="margin-right: auto; margin-left: 15px; flex-grow: 0; max-width: 250px; padding: 2px 10px; min-height: 28px; background-color: var(--input-bg); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.9rem;">
+                        <option value="all">すべて</option>
+                        <option value="hirose">ヒロセ通商</option>
+                        <option value="gmo">GMOクリック証券（デモ）</option>
+                    </select>
                     <button type="button" id="settingsBtn" class="btn-icon">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                     </button>
@@ -153,8 +153,7 @@
                     <!-- 1段目: 日付, No, LOT累計, 累計損益 -->
                     <div class="form-group">
                         <label for="date">日付</label>
-                        <div id="dateDisplay" class="custom-display">--月--日(-)</div>
-                        <input type="date" id="date" class="date-input-overlay" required>
+                        <input type="date" id="date" required style="cursor: pointer; opacity: 1; padding: 6px; font-size: 0.95rem;">
                     </div>
                     <div class="form-group"><label for="no">No</label><input type="number" id="no" required min="1"></div>
                     <div class="form-group"><label>LOT累計</label><div id="totalLotDisplay" class="display-box">0</div></div>
@@ -234,7 +233,9 @@
 
             <div class="actions">
                 <button type="submit" id="saveBtn" class="btn primary">更新</button>
-                <button type="button" id="exportBtn" class="btn accent">CSV保存</button>
+                <button type="button" id="exportBtn" class="btn accent">分析内容保存</button>
+                <button type="button" id="fetchMailBtn" class="btn" style="background-color: #f59e0b; color: white;">メール取得</button>
+                <button type="button" id="tbdBtn" class="btn" style="background-color: #64748b; color: white;">TBD</button>
             </div>
             <input type="hidden" id="editIndex" value="-1">
         </form>
@@ -326,6 +327,9 @@
             // ── 分析項目の状態管理 ──
             let analysisItemsData = null;
             let analysisItemsFileId = null;
+
+            // ── パーサー設定の管理 ──
+            let parserSettings = null;
 
             // ── 初期分析項目データ (file:// 制約対策) ──
             const DEFAULT_ANALYSIS_ITEMS = {
@@ -562,7 +566,7 @@
                     if (typeof google !== 'undefined' && google.accounts) {
                         googleTokenClient = google.accounts.oauth2.initTokenClient({
                             client_id: GOOGLE_CLIENT_ID,
-                            scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.metadata.readonly',
+                            scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/gmail.readonly',
                             callback: async (response) => {
                                 if (response.access_token) {
                                     cloudConfig.service = 'Google Drive';
@@ -703,7 +707,7 @@
                 } catch(e) { return dateStr; }
             }
             function updateDateDisplay() {
-                const el = get('dateDisplay'); if(el) el.textContent = formatDispDate(fields.date.value);
+                // dateDisplay要素は削除されたため、ここでの必須処理はなし
             }
             function updateAutoNo() {
                 const ei = get('editIndex');
@@ -825,6 +829,19 @@
 
                 renderSelects();
             }
+
+            // ── パーサー設定ロード処理 ──
+            async function loadParserSettings() {
+                try {
+                    let localRes = await fetch('parser_settings.json?t=' + Date.now());
+                    if (localRes.ok) {
+                        parserSettings = await localRes.json();
+                    }
+                } catch (e) {
+                    console.warn('parser_settings.json load failed');
+                }
+            }
+
             function updateTotals() {
                 const pSum = trades.reduce((a, t) => a + (parseFloat(t.profit) || 0), 0);
                 const lSum = trades.reduce((a, t) => a + (parseFloat(t.lot) || 0), 0);
@@ -1130,6 +1147,231 @@
                 a.click();
             };
 
+            // ── メールパーサー ──
+            function parseHirose(body) {
+                const getStr = (key) => {
+                    const match = body.match(new RegExp(`${key}:(.*)`));
+                    return match ? match[1].trim() : "";
+                };
+                try {
+                    const execDate = getStr("成立日時");
+                    const orderNo = getStr("注文番号");
+                    const currency = getStr("通貨");
+                    
+                    // 新規決済区分が複数行ある場合に対応するため、最後のマッチを取得 (例: 一往復取引など)
+                    let tradeType = "";
+                    const tradeMatch = body.match(/新規決済区分:(.*)/g);
+                    if (tradeMatch && tradeMatch.length > 0) {
+                        tradeType = tradeMatch[tradeMatch.length-1].replace("新規決済区分:", "").trim();
+                    }
+                    
+                    const side = getStr("売買");
+                    const lot = getStr("Lot数");
+                    const execPrice = getStr("成立値");
+                    
+                    let profit = "0";
+                    const profitMatch = body.match(/売買損益:([0-9\.\-\+,]+)円/);
+                    if (profitMatch) {
+                        profit = profitMatch[1].replace(/,/g, '');
+                    }
+
+                    if (!execDate) return null;
+                    return { execDate, orderNo, currency, tradeType, side, lot, execPrice, profit };
+                } catch(e) { return null; }
+            }
+
+            function parseGmo(body) {
+                const getStr = (block, key) => {
+                    const bp = body.indexOf(block);
+                    if (bp === -1) return "";
+                    // GMOはコロンが全角「：」
+                    const match = body.substring(bp).match(new RegExp(`${key}：(.*)`));
+                    return match ? match[1].trim() : "";
+                };
+                try {
+                    const rawExecDate = getStr("[約定内容]", "約定日時");
+                    let execDate = "";
+                    if (rawExecDate) {
+                        const m = rawExecDate.match(/^(\d{2})\/(\d{2})\/(\d{2})\s+(\d{2}):(\d{2})/);
+                        if (m) {
+                            execDate = `20${m[1]}/${m[2]}/${m[3]} ${m[4]}:${m[5]}:00`;
+                        } else {
+                            execDate = rawExecDate;
+                        }
+                    }
+                    const orderNo = getStr("[注文内容]", "注文番号");
+                    const currency = getStr("[約定内容]", "通貨ペア");
+                    const tradeType = getStr("[約定内容]", "取引種類");
+                    const side = getStr("[約定内容]", "売買区分");
+                    
+                    let rawLot = getStr("[約定内容]", "約定数量");
+                    let lot = "";
+                    if (rawLot) {
+                        const num = parseFloat(rawLot.replace(/,/g, ''));
+                        lot = (num / 10000).toString();
+                    }
+                    const execPrice = getStr("[約定内容]", "約定レート");
+                    const profit = "0"; // 記載なし
+
+                    if (!execDate) return null;
+                    return { execDate, orderNo, currency, tradeType, side, lot, execPrice, profit };
+                } catch(e) { return null; }
+            }
+
+            function downloadMailCsv(mailsArray, companyName, fileName, targetDate) {
+                const headRow1 = `"${companyName}","${targetDate}"`;
+                const headRow2 = `"通番","メール受信日時","メール送信日時","約定日時","注文番号","通貨","新規決済区分","売買","Lot数","約定値","損益"`;
+                
+                const dataRows = mailsArray.map((m, idx) => {
+                    const row = [
+                        idx + 1, m.emailRecvTime, m.emailSendTime,
+                        m.execDate, m.orderNo, m.currency, m.tradeType,
+                        m.side, m.lot, m.execPrice, m.profit
+                    ];
+                    return row.map(v => `"${(v||"").toString().replace(/\n/g," ")}"`).join(",");
+                });
+
+                const csv = "\ufeff" + headRow1 + "\n" + headRow2 + "\n" + dataRows.join("\n");
+                const b = new Blob([csv], { type: 'text/csv' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(b);
+                a.download = fileName;
+                a.click();
+            }
+            
+            function decodeUtf8Base64Url(b64) {
+                try {
+                    let b = atob(b64.replace(/-/g, '+').replace(/_/g, '/'));
+                    return new TextDecoder('utf-8').decode(Uint8Array.from(b, c => c.charCodeAt(0)));
+                } catch(e) {
+                    return "";
+                }
+            }
+
+            get('fetchMailBtn').onclick = async () => {
+                if (!cloudConfig.accessToken) {
+                    showToast('先にGoogle Drive連携または再接続を行ってください', 'warn');
+                    return;
+                }
+                const targetDateStr = fields.date.value;
+                if (!targetDateStr) {
+                    showToast('日付を指定してください', 'warn');
+                    return;
+                }
+
+                // JST 07:00:00 〜 翌日 06:59:59 
+                // targetDateStr="2026-04-13" の場合など
+                const dt = new Date(targetDateStr + "T07:00:00+09:00");
+                const nextDt = new Date(dt.getTime() + 24 * 60 * 60 * 1000 - 1000);
+                const afterSec = Math.floor(dt.getTime() / 1000);
+                const beforeSec = Math.floor(nextDt.getTime() / 1000) + 1; // beforeは含まないため +1
+
+                const queryStr = `(from:lfx@hirose-fx.co.jp OR from:info-demo@click-sec.com) after:${afterSec} before:${beforeSec}`;
+                const qParams = new URLSearchParams({
+                    q: queryStr,
+                    includeSpamTrash: 'true',
+                    maxResults: '100'
+                });
+
+                const btn = get('fetchMailBtn');
+                const origText = btn.textContent;
+                btn.textContent = '取得中…';
+                btn.disabled = true;
+
+                try {
+                    const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?${qParams.toString()}`, {
+                        headers: { 'Authorization': `Bearer ${cloudConfig.accessToken}` }
+                    });
+
+                    if (!res.ok) {
+                        if (res.status === 403) throw new Error('Gmail API許可がありません(再ログイン必要)');
+                        throw new Error(`Gmail API HTTP ${res.status}`);
+                    }
+
+                    const data = await res.json();
+                    if (!data.messages || data.messages.length === 0) {
+                        showToast('条件に合致する約定メールはありませんでした', 'success');
+                        return;
+                    }
+
+                    const mailsHirose = [];
+                    const mailsGmo = [];
+
+                    for (const m of data.messages) {
+                        const mRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}`, {
+                            headers: { 'Authorization': `Bearer ${cloudConfig.accessToken}` }
+                        });
+                        if (!mRes.ok) continue;
+
+                        const mData = await mRes.json();
+                        const headers = (mData.payload && mData.payload.headers) ? mData.payload.headers : [];
+                        
+                        let from = "", dateStr = "", subject = "";
+                        headers.forEach(h => {
+                            if (h.name.toLowerCase() === 'from') from = h.value;
+                            if (h.name.toLowerCase() === 'date') dateStr = h.value;
+                            if (h.name.toLowerCase() === 'subject') subject = h.value;
+                        });
+
+                        const emailSendDate = new Date(dateStr).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+                        // internalDate はミリ秒
+                        const emailRecvDate = new Date(parseInt(mData.internalDate || "0")).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+
+                        // 本文抽出
+                        let bodyStr = "";
+                        let parts = [mData.payload];
+                        while(parts.length > 0) {
+                            let p = parts.shift();
+                            if(p.body && p.body.data) {
+                                bodyStr += decodeUtf8Base64Url(p.body.data);
+                            }
+                            if(p.parts) {
+                                parts = parts.concat(p.parts);
+                            }
+                        }
+
+                        // パーサー割り当て
+                        if (from.includes("lfx@hirose-fx.co.jp") && subject.includes("注文成立のお知らせ")) {
+                            const parsed = parseHirose(bodyStr);
+                            if (parsed) {
+                                parsed.emailSendTime = emailSendDate;
+                                parsed.emailRecvTime = emailRecvDate;
+                                mailsHirose.push(parsed);
+                            }
+                        } else if (from.includes("info-demo@click-sec.com") && subject.includes("約定のお知らせ")) {
+                            const parsed = parseGmo(bodyStr);
+                            if (parsed) {
+                                parsed.emailSendTime = emailSendDate;
+                                parsed.emailRecvTime = emailRecvDate;
+                                mailsGmo.push(parsed);
+                            }
+                        }
+                    }
+
+                    // 送信日時の昇順（古いものが先）にソート
+                    mailsHirose.sort((a,b) => new Date(a.emailSendTime) - new Date(b.emailSendTime));
+                    mailsGmo.sort((a,b) => new Date(a.emailSendTime) - new Date(b.emailSendTime));
+
+                    // ダウンロード処理
+                    const curDateFormatted = targetDateStr.replace(/-/g, '');
+                    if (mailsHirose.length > 0) {
+                        downloadMailCsv(mailsHirose, "ヒロセ通商", `LION${curDateFormatted}.csv`, targetDateStr);
+                    }
+                    if (mailsGmo.length > 0) {
+                        downloadMailCsv(mailsGmo, "GMOクリック証券（デモ）", `GMOデモ${curDateFormatted}.csv`, targetDateStr);
+                    }
+
+                    showToast(`メール取得完了 LION:${mailsHirose.length}件 GMO:${mailsGmo.length}件`, 'success');
+
+                } catch (e) {
+                    console.error("fetchMailBtn Error: ", e);
+                    showToast(e.message, 'error');
+                } finally {
+                    btn.textContent = origText;
+                    btn.disabled = false;
+                }
+            };
+
             // ────────────────────────────────────
             // ■ 初期化
             // ────────────────────────────────────
@@ -1144,6 +1386,7 @@
                 updateCloudUI();
                 initGoogleAuth();
                 await loadAnalysisItems(); // ここでrenderSelectsされる
+                await loadParserSettings(); // パーサー設定読み込み
                 initForm();
             }
             startup();
