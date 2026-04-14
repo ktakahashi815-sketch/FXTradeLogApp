@@ -235,7 +235,12 @@
                 <button type="submit" id="saveBtn" class="btn primary">更新</button>
                 <button type="button" id="exportBtn" class="btn accent">分析内容保存</button>
                 <button type="button" id="fetchMailBtn" class="btn" style="background-color: #f59e0b; color: white;">メール取得</button>
-                <button type="button" id="tbdBtn" class="btn" style="background-color: #64748b; color: white;">MT4用保存</button>
+                <div style="display:flex; flex-direction:column; gap:4px; margin:0;">
+                    <button type="button" id="tbdBtn" class="btn" style="background-color: #64748b; color: white; width:100%; height:100%;">MT4用保存</button>
+                    <label style="font-size:0.75rem; color:var(--text-secondary); text-align:center; cursor:pointer;" title="ONの場合、自動で対象ファイルを検索して変換します">
+                        <input type="checkbox" id="autoSelectMt4Csv" checked> ファイル自動選択
+                    </label>
+                </div>
             </div>
             <input type="hidden" id="editIndex" value="-1">
         </form>
@@ -1228,7 +1233,15 @@
                 } catch(e) { return null; }
             }
 
-            function downloadMailCsv(mailsArray, companyName, fileName, targetDate) {
+            async function verifyPermission(fileHandle, readWrite) {
+                const options = {};
+                if (readWrite) options.mode = 'readwrite';
+                if ((await fileHandle.queryPermission(options)) === 'granted') return true;
+                if ((await fileHandle.requestPermission(options)) === 'granted') return true;
+                return false;
+            }
+
+            async function saveCsvFile(mailsArray, companyName, fileName, targetDate, folderHandle) {
                 const headRow1 = `"${companyName}","${targetDate}"`;
                 const headRow2 = `"通番","メール受信日時","メール送信日時","約定日時","注文番号","通貨","新規決済区分","売買","Lot数","約定値","損益"`;
                 
@@ -1242,6 +1255,21 @@
                 });
 
                 const csv = "\ufeff" + headRow1 + "\n" + headRow2 + "\n" + dataRows.join("\n");
+                
+                if (folderHandle && await verifyPermission(folderHandle, true)) {
+                    try {
+                        const newFileHandle = await folderHandle.getFileHandle(fileName, { create: true });
+                        const writable = await newFileHandle.createWritable();
+                        await writable.write(csv);
+                        await writable.close();
+                        showToast(`MT4保存フォルダへ保存: ${fileName}`, 'success');
+                        return;
+                    } catch (e) {
+                        console.warn('API保存失敗。ダウンロード方式へ移行', e);
+                    }
+                }
+
+                // フォールバック: 通常のダウンロード
                 const b = new Blob([csv], { type: 'text/csv' });
                 const a = document.createElement('a');
                 a.href = URL.createObjectURL(b);
@@ -1366,13 +1394,13 @@
                     mailsHirose.sort((a,b) => new Date(a.emailSendTime) - new Date(b.emailSendTime));
                     mailsGmo.sort((a,b) => new Date(a.emailSendTime) - new Date(b.emailSendTime));
 
-                    // ダウンロード処理
+                    // ダウンロード処理またはMT4用フォルダ保存
                     const curDateFormatted = targetDateStr.replace(/-/g, '');
                     if (mailsHirose.length > 0) {
-                        downloadMailCsv(mailsHirose, "ヒロセ通商", `LION${curDateFormatted}.csv`, targetDateStr);
+                        await saveCsvFile(mailsHirose, "ヒロセ通商", `LION${curDateFormatted}.csv`, targetDateStr, mt4DirHandle);
                     }
                     if (mailsGmo.length > 0) {
-                        downloadMailCsv(mailsGmo, "GMOクリック証券（デモ）", `GMOデモ${curDateFormatted}.csv`, targetDateStr);
+                        await saveCsvFile(mailsGmo, "GMOクリック証券（デモ）", `GMO_Demo${curDateFormatted}.csv`, targetDateStr, mt4DirHandle);
                     }
 
                     showToast(`メール取得完了 LION:${mailsHirose.length}件 GMO:${mailsGmo.length}件`, 'success');
@@ -1389,7 +1417,7 @@
             // ────────────────────────────────────
             // ■ MT4 用保存処理
             // ────────────────────────────────────
-            const initDB = () => {
+            function initDB() {
                 return new Promise((resolve, reject) => {
                     const req = indexedDB.open("MT4AppDB", 1);
                     req.onupgradeneeded = (e) => {
@@ -1399,41 +1427,33 @@
                     req.onsuccess = (e) => resolve(e.target.result);
                     req.onerror = (e) => reject(e.target.error);
                 });
-            };
+            }
 
-            const saveHandle = async (key, handle) => {
+            async function saveHandle(key, handle) {
                 const db = await initDB();
                 const tx = db.transaction("handles", "readwrite");
                 tx.objectStore("handles").put(handle, key);
                 return new Promise(r => { tx.oncomplete = () => r(true); tx.onerror = () => r(false); });
-            };
+            }
 
-            const getHandle = async (key) => {
+            async function getHandle(key) {
                 const db = await initDB();
                 const tx = db.transaction("handles", "readonly");
                 const req = tx.objectStore("handles").get(key);
                 return new Promise(r => { req.onsuccess = () => r(req.result); req.onerror = () => r(null); });
-            };
+            }
 
             let mt4DirHandle = null;
             const mt4FolderStatus = get('mt4FolderStatus');
             const selectMt4FolderBtn = get('selectMt4FolderBtn');
 
-            const verifyPermission = async (fileHandle, readWrite) => {
-                const options = {};
-                if (readWrite) options.mode = 'readwrite';
-                if ((await fileHandle.queryPermission(options)) === 'granted') return true;
-                if ((await fileHandle.requestPermission(options)) === 'granted') return true;
-                return false;
-            };
-
-            const restoreMt4Handle = async () => {
+            async function restoreMt4Handle() {
                 mt4DirHandle = await getHandle('mt4Folder');
                 if (mt4DirHandle && mt4FolderStatus) {
                     mt4FolderStatus.textContent = `選択済み: ${mt4DirHandle.name}`;
                     mt4FolderStatus.style.color = 'var(--success)';
                 }
-            };
+            }
 
             if (selectMt4FolderBtn) {
                 selectMt4FolderBtn.onclick = async () => {
@@ -1485,168 +1505,191 @@
             const tbdBtn = get('tbdBtn');
             if (tbdBtn) {
                 tbdBtn.onclick = async () => {
-                    // MT4フォルダハンドルの確認（設定されていない場合はダウンロード方式へのフォールバックを案内）
-                    let useApi = false;
-                    if (mt4DirHandle) {
-                        if (await verifyPermission(mt4DirHandle, true)) {
-                            useApi = true;
-                        } else {
-                            showToast('フォルダへのアクセス権限がないため、ダウンロード方式で保存します', 'warn');
-                        }
-                    } else {
-                         // showToast('フォルダが未設定のため、ダウンロード方式で保存します', 'warn'); // 毎回出ると煩わしいため省略可能
-                    }
-
-                    const fxCompany = get('fxCompanySelect').value;
+                    const isAuto = get('autoSelectMt4Csv').checked;
                     const dateVal = fields.date.value;
                     if (!dateVal) {
                         showToast('日付を指定してください', 'warn');
                         return;
                     }
 
-                    let prefix = "";
-                    let companyName = "";
-                    if (fxCompany === 'hirose') {
-                        prefix = "LION";
-                        companyName = "LION";
-                    } else if (fxCompany === 'gmo') {
-                        prefix = "GMOデモ";
-                        companyName = "GMO";
-                    } else {
-                        showToast('FX会社（ヒロセ通商 または GMO）を選択してください', 'warn');
+                    let useApi = false;
+                    if (mt4DirHandle && await verifyPermission(mt4DirHandle, true)) {
+                        useApi = true;
+                    }
+
+                    if (isAuto && !useApi) {
+                        showToast('自動ファイル選択をご利用の際は、詳細設定より「MT4保存フォルダ」を設定してください', 'warn');
                         return;
                     }
 
-                    try {
-                        showToast('ダウンロードフォルダから約定メールCSVを選択してください', 'success');
-                        const [fileHandle] = await window.showOpenFilePicker({
-                            types: [{
-                                description: 'CSV Files',
-                                accept: { 'text/csv': ['.csv'] }
-                            }],
-                            multiple: false,
-                            startIn: 'downloads'
-                        });
+                    const fxCompany = get('fxCompanySelect').value;
+                    let targets = [];
+                    const dateStr = dateVal.replace(/-/g, '');
 
-                        const file = await fileHandle.getFile();
-                        const text = await file.text();
-                        
-                        const lines = text.split('\n').filter(line => line.trim().length > 0);
-                        let dataIdxStart = 0;
-                        for (let i = 0; i < lines.length; i++) {
-                            if (lines[i].includes('"通番"') || lines[i].includes('通番,')) {
-                                dataIdxStart = i + 1;
-                                break;
-                            }
+                    if (!isAuto) {
+                        // 手動モード
+                        if (fxCompany === 'hirose') targets.push({ companyName: "LION", inFileName: "", manual: true });
+                        else if (fxCompany === 'gmo') targets.push({ companyName: "GMO", inFileName: "", manual: true });
+                        else {
+                            showToast('自動選択OFFの場合、単一のFX会社を選択してください', 'warn');
+                            return;
                         }
+                    } else {
+                        // 自動モード
+                        if (fxCompany === 'hirose' || fxCompany === 'all') {
+                            targets.push({ companyName: "LION", inFileName: `LION${dateStr}.csv` });
+                        }
+                        if (fxCompany === 'gmo' || fxCompany === 'all') {
+                            targets.push({ companyName: "GMO", inFileName: `GMO_Demo${dateStr}.csv` });
+                        }
+                    }
 
-                        const csvData = [];
-                        for (let i = dataIdxStart; i < lines.length; i++) {
-                            const rowStr = lines[i];
-                            const cols = [];
-                            let inQuote = false;
-                            let cur = "";
-                            for (let j = 0; j < rowStr.length; j++) {
-                                const c = rowStr[j];
-                                if (c === '"') {
-                                    inQuote = !inQuote;
-                                } else if (c === ',' && !inQuote) {
-                                    cols.push(cur);
-                                    cur = "";
-                                } else {
-                                    cur += c;
+                    let processedCount = 0;
+
+                    for (const target of targets) {
+                        try {
+                            const { companyName, inFileName, manual } = target;
+                            let text = "";
+                            let finalOutFileName = "";
+
+                            if (manual) {
+                                showToast(`${companyName} の約定メールCSVを選択してください`, 'success');
+                                const [fileHandle] = await window.showOpenFilePicker({
+                                    types: [{ description: 'CSV Files', accept: { 'text/csv': ['.csv'] } }],
+                                    multiple: false, startIn: 'downloads'
+                                });
+                                const file = await fileHandle.getFile();
+                                text = await file.text();
+                                finalOutFileName = `MT4_${file.name}`;
+                            } else {
+                                // 自動モード（直接読み込み）
+                                try {
+                                    const fileHandle = await mt4DirHandle.getFileHandle(inFileName);
+                                    const file = await fileHandle.getFile();
+                                    text = await file.text();
+                                } catch(e) {
+                                    console.warn(`Error reading ${inFileName} automatically`, e);
+                                    // 1つのファイルの読み込み失敗はスキップして次へ
+                                    showToast(`${inFileName} が見つからないためスキップしました`, 'warn');
+                                    continue; 
+                                }
+                                finalOutFileName = `MT4_${inFileName}`;
+                            }
+
+                            const lines = text.split('\n').filter(line => line.trim().length > 0);
+                            let dataIdxStart = 0;
+                            for (let i = 0; i < lines.length; i++) {
+                                if (lines[i].includes('"通番"') || lines[i].includes('通番,')) {
+                                    dataIdxStart = i + 1;
+                                    break;
                                 }
                             }
-                            cols.push(cur);
 
-                            if (cols.length >= 10) {
-                                csvData.push({
-                                    execDate: cols[3].trim(),
-                                    currency: cols[5].trim(),
-                                    tradeType: cols[6].trim(),
-                                    side: cols[7].trim(),
-                                    lot: parseFloat(cols[8].trim()) || 0,
-                                    execPrice: cols[9].trim()
-                                });
-                            }
-                        }
+                            const csvData = [];
+                            for (let i = dataIdxStart; i < lines.length; i++) {
+                                const rowStr = lines[i];
+                                const cols = [];
+                                let inQuote = false;
+                                let cur = "";
+                                for (let j = 0; j < rowStr.length; j++) {
+                                    const c = rowStr[j];
+                                    if (c === '"') {
+                                        inQuote = !inQuote;
+                                    } else if (c === ',' && !inQuote) {
+                                        cols.push(cur);
+                                        cur = "";
+                                    } else {
+                                        cur += c;
+                                    }
+                                }
+                                cols.push(cur);
 
-                        // ソート: 1.通貨ペア(昇順) 2.約定日時(古い順)
-                        csvData.sort((a, b) => {
-                            if (a.currency !== b.currency) return a.currency.localeCompare(b.currency);
-                            return new Date(a.execDate).getTime() - new Date(b.execDate).getTime();
-                        });
-
-                        const mt4Rows = [];
-                        const entryQueues = {};
-
-                        for (const row of csvData) {
-                            const curr = row.currency;
-                            const lot = row.lot;
-
-                            if (!entryQueues[curr]) entryQueues[curr] = {};
-                            if (!entryQueues[curr][lot]) entryQueues[curr][lot] = [];
-
-                            if (row.tradeType.includes("新規")) {
-                                entryQueues[curr][lot].push(row);
-                            } else if (row.tradeType.includes("決済")) {
-                                if (entryQueues[curr][lot].length > 0) {
-                                    const entryRow = entryQueues[curr][lot].shift();
-                                    mt4Rows.push({
-                                        settleDate: toCyprusTimeStr(row.execDate),
-                                        settlePrice: row.execPrice,
-                                        entryDate: toCyprusTimeStr(entryRow.execDate),
-                                        entryPrice: entryRow.execPrice,
-                                        currency: curr,
-                                        lot: lot
+                                if (cols.length >= 10) {
+                                    csvData.push({
+                                        execDate: cols[3].trim(),
+                                        currency: cols[5].trim(),
+                                        tradeType: cols[6].trim(),
+                                        side: cols[7].trim(),
+                                        lot: parseFloat(cols[8].trim()) || 0,
+                                        execPrice: cols[9].trim()
                                     });
                                 }
                             }
-                        }
 
-                        if (mt4Rows.length === 0) {
-                            showToast('ペアリング可能な取引がありませんでした', 'warn');
-                            return;
-                        }
+                            csvData.sort((a, b) => {
+                                if (a.currency !== b.currency) return a.currency.localeCompare(b.currency);
+                                return new Date(a.execDate).getTime() - new Date(b.execDate).getTime();
+                            });
 
-                        const header = ["NO", "決済約定日時", "決済約定値", "ENTRY約定日時", "ENTRY約定値", "通貨ペア", "LOT数"];
-                        let outCsv = "\ufeff" + header.join(",") + "\n";
-                        
-                        mt4Rows.forEach((r, idx) => {
-                            outCsv += `${idx+1},${r.settleDate},${r.settlePrice},${r.entryDate},${r.entryPrice},${r.currency},${r.lot}\n`;
-                        });
+                            const mt4Rows = [];
+                            const entryQueues = {};
 
-                        const dateStr = dateVal.replace(/-/g, '');
-                        const outFileName = `MT4_${companyName}_${dateStr}.csv`;
-                        
-                        if (useApi) {
-                            try {
-                                const newFileHandle = await mt4DirHandle.getFileHandle(outFileName, { create: true });
-                                const writable = await newFileHandle.createWritable();
-                                await writable.write(outCsv);
-                                await writable.close();
-                                showToast(`MT4用CSVを作成しました（${mt4Rows.length}件）`, 'success');
-                                return; // 成功したので終了
-                            } catch (e) {
-                                console.warn('API保存失敗、ダウンロードへフォールバック', e);
-                                showToast('フォルダ保存失敗。ダウンロード方式へ切替', 'warn');
+                            for (const row of csvData) {
+                                const curr = row.currency;
+                                const lot = row.lot;
+
+                                if (!entryQueues[curr]) entryQueues[curr] = {};
+                                if (!entryQueues[curr][lot]) entryQueues[curr][lot] = [];
+
+                                if (row.tradeType.includes("新規")) {
+                                    entryQueues[curr][lot].push(row);
+                                } else if (row.tradeType.includes("決済")) {
+                                    if (entryQueues[curr][lot].length > 0) {
+                                        const entryRow = entryQueues[curr][lot].shift();
+                                        mt4Rows.push({
+                                            settleDate: toCyprusTimeStr(row.execDate),
+                                            settlePrice: row.execPrice,
+                                            entryDate: toCyprusTimeStr(entryRow.execDate),
+                                            entryPrice: entryRow.execPrice,
+                                            currency: curr,
+                                            lot: lot
+                                        });
+                                    }
+                                }
                             }
-                        }
-                        
-                        // APIが使えない/失敗した場合は通常のダウンロード処理（OS標準の保存ダイアログに委譲できる）
-                        const b = new Blob([outCsv], { type: 'text/csv' });
-                        const a = document.createElement('a');
-                        a.href = URL.createObjectURL(b);
-                        a.download = outFileName;
-                        a.click();
-                        showToast(`MT4用CSVを作成しました。手動で保存してください`, 'success');
 
-                    } catch (e) {
-                        console.error(e);
-                        // キャンセル処理時はトーストを出さない
-                        if (e.name !== 'AbortError') {
-                            showToast('ファイル処理に失敗しました', 'error');
+                            if (mt4Rows.length === 0) {
+                                showToast(`${companyName}: ペアリング可能な取引がありませんでした`, 'warn');
+                                continue;
+                            }
+
+                            const header = ["NO", "決済約定日時", "決済約定値", "ENTRY約定日時", "ENTRY約定値", "通貨ペア", "LOT数"];
+                            let outCsv = "\ufeff" + header.join(",") + "\n";
+                            
+                            mt4Rows.forEach((r, idx) => {
+                                outCsv += `${idx+1},${r.settleDate},${r.settlePrice},${r.entryDate},${r.entryPrice},${r.currency},${r.lot}\n`;
+                            });
+
+                            if (useApi) {
+                                try {
+                                    const newFileHandle = await mt4DirHandle.getFileHandle(finalOutFileName, { create: true });
+                                    const writable = await newFileHandle.createWritable();
+                                    await writable.write(outCsv);
+                                    await writable.close();
+                                    processedCount++;
+                                    continue; // 保存成功なら次のターゲットへ
+                                } catch (e) {
+                                    console.warn('API保存失敗、ダウンロードへフォールバック', e);
+                                    showToast(`${companyName}: フォルダ保存失敗。ダウンロード方式へ切替`, 'warn');
+                                }
+                            }
+                            
+                            // フォールバック
+                            const b = new Blob([outCsv], { type: 'text/csv' });
+                            const a = document.createElement('a');
+                            a.href = URL.createObjectURL(b);
+                            a.download = finalOutFileName;
+                            a.click();
+                            processedCount++;
+
+                        } catch (e) {
+                            console.error(e);
+                            if (e.name !== 'AbortError') showToast(`ファイル処理に失敗しました`, 'error');
                         }
+                    }
+
+                    if (processedCount > 0) {
+                        showToast(`MT4用CSVを作成しました（完了: ${processedCount}件）`, 'success');
                     }
                 };
             }
