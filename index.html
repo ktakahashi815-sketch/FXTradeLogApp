@@ -1642,7 +1642,8 @@
                                             entryDate: toCyprusTimeStr(entryRow.execDate),
                                             entryPrice: entryRow.execPrice,
                                             currency: curr,
-                                            lot: lot
+                                            lot: lot,
+                                            side: entryRow.side
                                         });
                                     }
                                 }
@@ -1653,11 +1654,11 @@
                                 continue;
                             }
 
-                            const header = ["NO", "決済約定日時", "決済約定値", "ENTRY約定日時", "ENTRY約定値", "通貨ペア", "LOT数"];
+                            const header = ["NO", "決済約定日時", "決済約定値", "ENTRY約定日時", "ENTRY約定値", "通貨ペア", "LOT数", "売買"];
                             let outCsv = "\ufeff" + header.join(",") + "\n";
                             
                             mt4Rows.forEach((r, idx) => {
-                                outCsv += `${idx+1},${r.settleDate},${r.settlePrice},${r.entryDate},${r.entryPrice},${r.currency},${r.lot}\n`;
+                                outCsv += `${idx+1},${r.settleDate},${r.settlePrice},${r.entryDate},${r.entryPrice},${r.currency},${r.lot},${r.side}\n`;
                             });
 
                             if (useApi) {
